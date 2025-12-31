@@ -1,0 +1,19 @@
+# SSH MCP Bridge - Minimal Configuration
+# Simplest possible configuration for quick testing
+
+server:
+  enable_stdio: true
+  enable_http: false
+  log_level: "INFO"
+
+hosts:
+  - name: my-server
+    description: "My SSH server"
+    host: "example.com"
+    username: "user"
+    private_key_path: "~/.ssh/id_rsa"
+    execution_mode: "shell"
+
+session:
+  idle_timeout: 30
+  max_sessions_per_host: 5

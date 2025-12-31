@@ -1,0 +1,74 @@
+# SSH MCP Bridge - HTTP Mode Configuration
+# This configuration is for remote deployment where the MCP server runs on a remote host
+# and AI agents connect via HTTP/SSE protocol.
+
+server:
+  # HTTP server configuration
+  host: "0.0.0.0"           # Listen on all interfaces
+  port: 8080                # HTTP port
+  enable_http: true         # Enable HTTP/SSE transport
+  enable_stdio: false       # Disable STDIO mode
+  
+  # API Key authentication (use strong random key)
+  # Generate with: openssl rand -hex 32
+  api_key: "your-secret-api-key-here-replace-with-strong-random-key"
+  
+  # CORS configuration for web clients
+  cors_origins:
+    - "*"  # Allow all origins (restrict in production)
+  
+  # Logging
+  log_level: "INFO"
+
+# SSH host definitions
+hosts:
+  - name: reverse-proxy
+    description: "Nginx reverse proxy with SSL termination"
+    host: "10.0.1.10"
+    port: 22
+    username: "proxy-admin"
+    private_key_path: "~/.ssh/proxy_key"
+    execution_mode: "shell"
+    disable_pager: true
+
+  - name: k8s-cluster
+    description: "Kubernetes cluster master node"
+    host: "10.0.1.20"
+    port: 22
+    username: "k8s-admin"
+    private_key_path: "~/.ssh/k8s_key"
+    execution_mode: "shell"
+    disable_pager: true
+
+  - name: database-primary
+    description: "PostgreSQL primary database"
+    host: "10.0.1.30"
+    port: 22
+    username: "postgres"
+    private_key_path: "~/.ssh/db_key"
+    execution_mode: "exec"
+    disable_pager: true
+
+  - name: cache-server
+    description: "Redis caching layer"
+    host: "10.0.1.40"
+    port: 22
+    username: "redis-admin"
+    private_key_path: "~/.ssh/cache_key"
+    execution_mode: "exec"
+    disable_pager: true
+
+  - name: message-queue
+    description: "RabbitMQ message broker"
+    host: "10.0.1.50"
+    port: 22
+    username: "mq-admin"
+    private_key_path: "~/.ssh/mq_key"
+    execution_mode: "exec"
+    disable_pager: true
+
+# Session management
+session:
+  idle_timeout: 30
+  max_sessions_per_host: 5
+  cleanup_interval: 60

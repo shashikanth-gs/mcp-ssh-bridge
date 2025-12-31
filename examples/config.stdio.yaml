@@ -1,0 +1,48 @@
+# SSH MCP Bridge - STDIO Mode Configuration
+# This configuration is for local deployment where the MCP client (Claude Desktop, VS Code)
+# runs on the same machine that has SSH access to all servers.
+
+server:
+  # STDIO mode for local MCP clients
+  enable_stdio: true
+  enable_http: false
+  
+  # Logging configuration
+  log_level: "INFO"  # DEBUG, INFO, WARN, ERROR
+
+# SSH host definitions
+# The AI agent will only see the "name" and "description" fields
+# Actual credentials (host, username, keys) are never exposed to the agent
+hosts:
+  - name: web-server
+    description: "Production web server running Nginx"
+    host: "192.168.1.100"
+    port: 22
+    username: "webadmin"
+    private_key_path: "~/.ssh/web_server_key"
+    execution_mode: "shell"
+    disable_pager: true
+
+  - name: app-server
+    description: "Application server running Python/Node.js backend"
+    host: "192.168.1.101"
+    port: 22
+    username: "appuser"
+    private_key_path: "~/.ssh/app_server_key"
+    execution_mode: "shell"
+    disable_pager: true
+
+  - name: db-server
+    description: "PostgreSQL database server"
+    host: "192.168.1.102"
+    port: 22
+    username: "dbadmin"
+    private_key_path: "~/.ssh/db_server_key"
+    execution_mode: "exec"
+    disable_pager: true
+
+# Session management
+session:
+  idle_timeout: 30            # Close sessions after 30 minutes of inactivity
+  max_sessions_per_host: 5    # Maximum 5 concurrent sessions per host
+  cleanup_interval: 60        # Check for idle sessions every 60 seconds

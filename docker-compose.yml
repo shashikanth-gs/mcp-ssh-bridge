@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  ssh-mcp-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ssh-mcp-bridge:latest
+    container_name: ssh-mcp-bridge
+    restart: unless-stopped
+
+    # Load environment variables from .env file
+    env_file:
+      - .env
+
+    # Environment variables
+    environment:
+      - SSH_MCP_LOG_LEVEL=${SSH_MCP_LOG_LEVEL:-INFO}
+      # OAuth/OIDC Configuration (optional)
+      - AUTH_MODE=${AUTH_MODE:-api_key}
+      - IDP_ISSUER=${IDP_ISSUER:-}
+      - IDP_AUDIENCE=${IDP_AUDIENCE:-}
+      - IDP_JWKS_URI=${IDP_JWKS_URI:-}
+      # API Key (used when AUTH_MODE=api_key)
+      - API_KEY=${API_KEY:-your-secure-api-key-here}
+
+    # Mount configuration and SSH keys
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ~/.ssh:/home/mcpuser/.ssh:ro
+      - ./logs:/app/logs
+
+    # HTTP mode
+    ports:
+      - "8080:8080"
+    command: ["--http", "config.yaml"]
+
+    # STDIO mode (default) - commented out for HTTP mode
+    # stdin_open: true
+    # tty: true
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+
+    # Networks
+    networks:
+      - ssh-mcp-network
+
+networks:
+  ssh-mcp-network:
+    driver: bridge

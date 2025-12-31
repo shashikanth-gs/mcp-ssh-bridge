@@ -1,0 +1,126 @@
+# SSH MCP Bridge - OAuth/OIDC Authentication Configuration
+# This configuration uses OAuth 2.0 / OpenID Connect for authentication
+# Suitable for enterprise deployments with ChatGPT, custom MCP clients, etc.
+
+server:
+  # HTTP server configuration
+  host: "0.0.0.0"
+  port: 8080
+  enable_http: true
+  enable_stdio: false
+  
+  # OAuth/OIDC configuration
+  oauth:
+    enabled: true
+    issuer: "https://your-domain.auth0.com/"              # Your OAuth provider issuer URL
+    audience: "https://ssh-mcp-bridge.yourdomain.com"     # Your API identifier/audience
+    jwks_uri: "https://your-domain.auth0.com/.well-known/jwks.json"  # Optional, auto-discovered if not set
+  
+  # CORS configuration - add your OAuth provider and clients
+  cors_origins:
+    - "https://chat.openai.com"
+    - "https://chatgpt.com"
+    - "https://yourdomain.com"
+  
+  log_level: "INFO"
+
+# SSH hosts
+hosts:
+  - name: production-web
+    description: "Production web server with Nginx and SSL"
+    host: "prod-web.internal"
+    port: 22
+    username: "deploy"
+    private_key_path: "~/.ssh/prod_web_key"
+    execution_mode: "shell"
+    disable_pager: true
+
+  - name: staging-web
+    description: "Staging web server for testing"
+    host: "staging-web.internal"
+    port: 22
+    username: "deploy"
+    private_key_path: "~/.ssh/staging_web_key"
+    execution_mode: "shell"
+    disable_pager: true
+
+  - name: production-db
+    description: "Production PostgreSQL database"
+    host: "prod-db.internal"
+    port: 22
+    username: "dbadmin"
+    private_key_path: "~/.ssh/prod_db_key"
+    execution_mode: "exec"
+    disable_pager: true
+
+# Session management
+session:
+  idle_timeout: 30
+  max_sessions_per_host: 5
+  cleanup_interval: 60
+
+# =============================================================================
+# OAuth Provider Setup Instructions
+# =============================================================================
+#
+# Supported Providers: Auth0, Okta, Azure AD, Keycloak, or any OIDC provider
+#
+# 1. AUTH0 SETUP:
+#    a. Create an API in Auth0 Dashboard
+#    b. Set Identifier as your audience (e.g., https://ssh-mcp-bridge.yourdomain.com)
+#    c. Enable RS256 signing algorithm
+#    d. Create an Application (Machine to Machine or SPA)
+#    e. Authorize the application to access your API
+#    f. Configure required scopes: openid, profile, email, mcp:execute
+#
+# 2. AZURE AD SETUP:
+#    a. Register an application in Azure Portal
+#    b. Add API permissions
+#    c. Expose an API with custom scopes
+#    d. Configure token version 2.0
+#    e. Set Issuer URL: https://login.microsoftonline.com/{tenant-id}/v2.0
+#
+# 3. OKTA SETUP:
+#    a. Create an Authorization Server
+#    b. Set audience claim
+#    c. Create an application (Web, SPA, or Native)
+#    d. Configure scopes in the Authorization Server
+#    e. Set Issuer URL: https://{your-okta-domain}/oauth2/{auth-server-id}
+#
+# 4. KEYCLOAK SETUP:
+#    a. Create a realm and client
+#    b. Enable Client Authentication if using confidential client
+#    c. Set Valid Redirect URIs
+#    d. Configure Client Scopes
+#    e. Set Issuer URL: https://{keycloak-host}/realms/{realm-name}
+#
+# 5. ENVIRONMENT VARIABLES (alternative to config file):
+#    export AUTH_MODE=oidc
+#    export IDP_ISSUER=https://your-domain.auth0.com/
+#    export IDP_AUDIENCE=https://ssh-mcp-bridge.yourdomain.com
+#    export IDP_JWKS_URI=https://your-domain.auth0.com/.well-known/jwks.json
+#
+# 6. CHATGPT INTEGRATION:
+#    - ChatGPT will discover OAuth metadata from:
+#      GET /.well-known/oauth-protected-resource
+#    - Configure in ChatGPT UI with:
+#      * Authorization URL: {issuer}/authorize
+#      * Token URL: {issuer}/oauth/token
+#      * Client ID: Your OAuth application client ID
+#      * Client Secret: Your OAuth application client secret
+#      * Scopes: openid profile email mcp:execute
+#
+# 7. TESTING:
+#    # Get token from your OAuth provider
+#    curl -X POST https://your-domain.auth0.com/oauth/token \
+#      -H "Content-Type: application/json" \
+#      -d '{
+#        "client_id": "your-client-id",
+#        "client_secret": "your-client-secret",
+#        "audience": "https://ssh-mcp-bridge.yourdomain.com",
+#        "grant_type": "client_credentials"
+#      }'
+#
+#    # Use token to access API
+#    curl -H "Authorization: Bearer {token}" \
+#      http://localhost:8080/api/v1/hosts
