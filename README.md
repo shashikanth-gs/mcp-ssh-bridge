@@ -277,8 +277,6 @@ Built with:
 - [ ] Multi-hop SSH (bastion/jump hosts)
 - [ ] Resource definitions for server state
 - [ ] Prompt templates for common operations
-- [ ] WebSocket support for real-time streaming
-- [ ] Prometheus metrics export
 
 ---
 
