@@ -3,7 +3,7 @@ SSH MCP BRIDGE - OPEN SOURCE RELEASE SUMMARY
 
 Repository: https://github.com/shashikanth-gs/mcp-ssh-bridge
 Docker Hub: https://hub.docker.com/r/shashikanthg/mcp-ssh-bridge
-Author: Shashikanth Goud (@shashikanth-gs)
+Author: Shashi Kanth G S (@shashikanth-gs)
 
 DIRECTORY STRUCTURE
 ===================

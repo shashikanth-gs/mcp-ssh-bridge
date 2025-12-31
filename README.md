@@ -258,7 +258,7 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ## Credits
 
-Created by **Shashikanth Goud** ([@shashikanth-gs](https://github.com/shashikanth-gs))
+Created by **Shashi Kanth G S** ([@shashikanth-gs](https://github.com/shashikanth-gs))
 
 Built with:
 - [FastMCP](https://github.com/jlowin/fastmcp) - MCP framework

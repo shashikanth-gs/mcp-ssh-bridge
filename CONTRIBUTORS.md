@@ -4,7 +4,7 @@ Thank you to everyone who has contributed to SSH MCP Bridge!
 
 ## Core Contributors
 
-### Shashikanth Goud
+### Shashi Kanth G S
 - **Role**: Creator and Lead Developer
 - **Contributions**: 
   - Initial concept and architecture
