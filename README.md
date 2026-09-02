@@ -76,19 +76,35 @@ An agent can:
 
 ## Quick Start
 
-### Local Deployment (STDIO Mode)
+You can run the bridge instantly without cloning the repository using `pipx` or `uvx` (the Python equivalents of `npx`):
 
-Perfect for homelabs where your machine has direct SSH access to all servers.
+```bash
+# Using pipx (Standard)
+pipx run ssh-mcp-bridge config.yaml
+
+# Using uvx (Faster)
+uvx ssh-mcp-bridge config.yaml
+```
+
+Alternatively, you can install it globally using `pip`:
+```bash
+pip install ssh-mcp-bridge
+ssh-mcp-bridge config.yaml
+```
+
+### Advanced: Local Source Deployment
+
+If you want to modify the source code:
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/shashikanth-gs/mcp-ssh-bridge.git
-cd ssh-mcp-bridge
+cd mcp-ssh-bridge
 
 # 2. Install dependencies
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+source .venv/bin/activate
+pip install -e .
 
 # 3. Create configuration
 cp examples/config.stdio.yaml config.yaml
