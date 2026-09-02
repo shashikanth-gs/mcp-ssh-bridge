@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP SSH Bridge | AI Agents Meet Secure SSH Automation</title>
+    
+    <!-- SEO Optimization Meta Tags -->
+    <meta name="description" content="MCP SSH Bridge empowers AI agents like Claude and ChatGPT to securely manage and automate remote SSH servers. Built with the Model Context Protocol (MCP). Developed by Shashi Kanth.">
+    <meta name="keywords" content="MCP, Model Context Protocol, SSH Bridge, AI Agents, ChatGPT, Claude, Server Management, Automation, Shashi Kanth, LLM Tooling, Developer Tools, System Administration">
+    <meta name="author" content="Shashi Kanth">
+    
+    <!-- Open Graph / Social -->
+    <meta property="og:title" content="MCP SSH Bridge - Secure AI Server Automation">
+    <meta property="og:description" content="Bridge the gap between AI Agents and your infrastructure. Secure, auditable, and powerful SSH automation via the Model Context Protocol.">
+    <meta property="og:type" content="website">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#1e293b',
+                        accent: '#10b981',
+                        dark: '#0f172a'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Mermaid.js for Diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.4.0/dist/mermaid.min.js"></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-text {
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-image: linear-gradient(90deg, #3b82f6, #10b981);
+        }
+        .hero-bg {
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased selection:bg-primary selection:text-white">
+
+    <!-- Navigation -->
+    <nav class="bg-dark text-white p-4 sticky top-0 z-50 border-b border-gray-800">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2 font-bold text-xl tracking-tight">
+                <i class="fa-solid fa-network-wired text-accent"></i>
+                <span>MCP SSH Bridge</span>
+            </div>
+            <div class="hidden md:flex space-x-6 text-sm font-medium">
+                <a href="#features" class="hover:text-primary transition">Features</a>
+                <a href="#use-cases" class="hover:text-primary transition">Use Cases</a>
+                <a href="#architecture" class="hover:text-primary transition">Architecture</a>
+                <a href="QUICKSTART.md" class="hover:text-primary transition">Docs</a>
+            </div>
+            <div>
+                <a href="https://github.com/shashikanth-gs/mcp-ssh-bridge" class="bg-white text-dark px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-200 transition shadow">
+                    <i class="fa-brands fa-github mr-1"></i> GitHub
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero-bg text-white pt-24 pb-32 relative overflow-hidden">
+        <!-- Abstract Shapes -->
+        <div class="absolute top-0 right-0 -mr-32 -mt-32 w-96 h-96 rounded-full bg-primary opacity-20 blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 -ml-32 -mb-32 w-96 h-96 rounded-full bg-accent opacity-20 blur-3xl"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
+                Give your AI Agents <br />
+                <span class="gradient-text">SSH Superpowers</span>
+            </h1>
+            <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-300 mb-10 leading-relaxed">
+                Seamlessly connect Claude, ChatGPT, and other LLMs to your remote infrastructure via the Model Context Protocol. Automate servers, databases, and deployments securely.
+            </p>
+            <div class="flex justify-center space-x-4">
+                <a href="QUICKSTART.md" class="bg-primary hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-bold text-lg shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-1">
+                    Get Started <i class="fa-solid fa-arrow-right ml-2"></i>
+                </a>
+                <a href="#architecture" class="glass-card hover:bg-gray-800 text-white px-8 py-3 rounded-lg font-bold text-lg transition border border-gray-600">
+                    How it works
+                </a>
+            </div>
+            <div class="mt-8 text-sm text-gray-400">
+                Created by <span class="font-semibold text-white">Shashi Kanth</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Use Cases Graphically -->
+    <section id="architecture" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-dark">How It Works</h2>
+                <p class="text-gray-600 mt-4 max-w-2xl mx-auto">A secure, bidirectional bridge between modern AI reasoning engines and your raw compute infrastructure.</p>
+            </div>
+
+            <!-- Mermaid Diagram -->
+            <div class="bg-gray-50 rounded-2xl p-8 border border-gray-100 shadow-inner flex justify-center overflow-x-auto">
+                <div class="mermaid">
+                    graph LR
+                        classDef ai fill:#f0f9ff,stroke:#0ea5e9,stroke-width:2px;
+                        classDef mcp fill:#f8fafc,stroke:#94a3b8,stroke-width:2px;
+                        classDef bridge fill:#ecfdf5,stroke:#10b981,stroke-width:2px;
+                        classDef target fill:#fff1f2,stroke:#f43f5e,stroke-width:2px;
+
+                        A[AI Agent<br/>Claude/ChatGPT]:::ai <-->|Model Context Protocol| B{MCP Client}:::mcp
+                        B <-->|STDIO / HTTP| C[SSH MCP Bridge<br/>Python App]:::bridge
+                        C <-->|Secure SSH/SFTP| D[Remote Server 1]:::target
+                        C <-->|Secure SSH/SFTP| E[Remote Server 2]:::target
+                        C <-->|Secure SSH/SFTP| F[Database Host]:::target
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-dark">Key Features</h2>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                    <div class="w-12 h-12 bg-blue-100 text-primary rounded-xl flex items-center justify-center text-xl mb-6">
+                        <i class="fa-solid fa-terminal"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Remote Execution</h3>
+                    <p class="text-gray-600">Run shell commands natively on target machines. AI agents can analyze logs, restart services, or debug system states in real-time.</p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                    <div class="w-12 h-12 bg-green-100 text-accent rounded-xl flex items-center justify-center text-xl mb-6">
+                        <i class="fa-solid fa-file-export"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">SFTP File Transfer</h3>
+                    <p class="text-gray-600">Bidirectional file transfer capability. Agents can safely upload configuration files or download database dumps for analysis.</p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                    <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center text-xl mb-6">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">Enterprise Security</h3>
+                    <p class="text-gray-600">Strict path allowlists, command timeouts, key-based authentication, and payload size limits ensure your infrastructure remains secure.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases -->
+    <section id="use-cases" class="py-20 bg-dark text-white">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold">Powerful Use Cases</h2>
+                <p class="text-gray-400 mt-4 max-w-2xl mx-auto">Transform how you interact with your systems by making them conversational.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12">
+                <!-- Case 1 -->
+                <div class="flex space-x-6">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-primary">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-bold mb-2">Automated SysAdmin</h4>
+                        <p class="text-gray-400 leading-relaxed">Ask Claude to "check why the web server is slow." The agent will SSH in, run `top`, check `/var/log/nginx`, analyze the results, and propose a fix—all in one conversation.</p>
+                    </div>
+                </div>
+
+                <!-- Case 2 -->
+                <div class="flex space-x-6">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-accent">
+                            <i class="fa-solid fa-code-merge"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-bold mb-2">CI/CD & Deployments</h4>
+                        <p class="text-gray-400 leading-relaxed">Direct your AI assistant to "deploy the latest build to staging." The bridge allows the agent to upload the artifacts via SFTP, stop the service, swap binaries, and restart.</p>
+                    </div>
+                </div>
+                
+                <!-- Case 3 -->
+                <div class="flex space-x-6">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-blue-400">
+                            <i class="fa-solid fa-database"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-bold mb-2">Database Troubleshooting</h4>
+                        <p class="text-gray-400 leading-relaxed">Agent can securely connect to a jump host, run SQL queries via CLI, fetch the schema, and help you optimize slow queries based on live execution plans.</p>
+                    </div>
+                </div>
+                
+                <!-- Case 4 -->
+                <div class="flex space-x-6">
+                    <div class="flex-shrink-0 mt-1">
+                        <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-yellow-400">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-bold mb-2">Security Auditing</h4>
+                        <p class="text-gray-400 leading-relaxed">Task the LLM with verifying security configurations. It can scan open ports, read SSH configs, and ensure compliance without needing a complex security agent installed.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation Snippet -->
+    <section class="py-20 bg-white">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+            <h2 class="text-3xl font-bold text-dark mb-8">Ready to supercharge your AI?</h2>
+            
+            <div class="bg-gray-900 rounded-xl p-6 text-left shadow-2xl overflow-x-auto border border-gray-800">
+                <div class="flex space-x-2 mb-4">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                </div>
+                <code class="text-gray-300 font-mono text-sm leading-loose">
+                    <span class="text-accent"># 1. Install via pip</span><br/>
+                    pip install ssh-mcp-bridge<br/><br/>
+                    <span class="text-accent"># 2. Configure your SSH targets</span><br/>
+                    cp ssh_mcp.yaml.example config.yaml<br/><br/>
+                    <span class="text-accent"># 3. Add to Claude Desktop Config</span><br/>
+                    {<br/>
+                    &nbsp;&nbsp;"mcpServers": {<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;"ssh-bridge": {<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"command": "python",<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"args": ["-m", "ssh_mcp_bridge", "--config", "/path/to/config.yaml"]<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+                    &nbsp;&nbsp;}<br/>
+                    }
+                </code>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 border-t border-gray-800 py-12 text-center text-gray-500">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="mb-4">
+                <i class="fa-solid fa-network-wired text-3xl text-gray-700"></i>
+            </div>
+            <p class="mb-2">Open Source Project designed and developed by <a href="https://github.com/shashikanth-gs" class="text-primary hover:underline">Shashi Kanth</a>.</p>
+            <p class="text-sm">Licensed under the MIT License.</p>
+            <div class="mt-6 flex justify-center space-x-4">
+                <a href="https://github.com/shashikanth-gs/mcp-ssh-bridge" class="text-gray-400 hover:text-white transition text-xl">
+                    <i class="fa-brands fa-github"></i>
+                </a>
+                <a href="https://hub.docker.com/r/shashikanthg/mcp-ssh-bridge" class="text-gray-400 hover:text-white transition text-xl">
+                    <i class="fa-brands fa-docker"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</body>
+</html>
