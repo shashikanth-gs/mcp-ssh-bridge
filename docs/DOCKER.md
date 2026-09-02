@@ -14,6 +14,7 @@ docker run -d \
   -p 8080:8080 \
   -v $(pwd)/config.yaml:/app/config.yaml:ro \
   -v ~/.ssh:/home/mcpuser/.ssh:ro \
+  -v ssh-mcp-transfers:/var/lib/ssh-mcp-bridge/transfers \
   shashikanth-gs/mcp-ssh-bridge:latest
 ```
 
@@ -70,8 +71,23 @@ docker run -d \
   -p 8080:8080 \
   -v $(pwd)/config.yaml:/app/config.yaml:ro \
   -v ~/.ssh:/home/mcpuser/.ssh:ro \
+  -v ssh-mcp-transfers:/var/lib/ssh-mcp-bridge/transfers \
   shashikanth-gs/mcp-ssh-bridge:latest
 ```
+
+The `ssh-mcp-transfers` volume is the server-side staging area for HTTP-mode file transfers. Configure it in `config.yaml`:
+
+```yaml
+security:
+  allowed_local_paths:
+    - "/var/lib/ssh-mcp-bridge/transfers"
+  allowed_remote_write_paths:
+    - "~"
+    - "/tmp"
+  max_file_transfer_mb: 100
+```
+
+In HTTP mode, files are uploaded from and downloaded to this container path. A laptop or remote MCP client does not automatically share its local filesystem with the container.
 
 ### With Environment Variables
 
@@ -136,6 +152,7 @@ services:
     volumes:
       - ./config.yaml:/app/config.yaml:ro
       - ~/.ssh:/home/mcpuser/.ssh:ro
+      - ssh-mcp-transfers:/var/lib/ssh-mcp-bridge/transfers
     environment:
       - LOG_LEVEL=INFO
     healthcheck:
@@ -144,6 +161,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  ssh-mcp-transfers:
 ```
 
 Run with:

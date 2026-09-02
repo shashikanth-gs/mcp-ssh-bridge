@@ -4,6 +4,7 @@ import argparse
 import logging
 import platform
 import sys
+from importlib.metadata import PackageNotFoundError, version as package_version
 from pathlib import Path
 from typing import Optional
 
@@ -176,9 +177,8 @@ Environment Variables:
         print(f"SSH MCP Bridge version:                    {VERSION}")
         print(f"FastMCP version:                           {fastmcp.__version__}")
         try:
-            import mcp
-            print(f"MCP version:                               {mcp.__version__}")
-        except (ImportError, AttributeError):
+            print(f"MCP version:                               {package_version('mcp')}")
+        except PackageNotFoundError:
             print("MCP version:                               N/A")
         print(f"Python version:                            {platform.python_version()}")
         print(f"Platform:                                  {platform.platform()}")

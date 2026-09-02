@@ -1,6 +1,6 @@
 # SSH MCP Bridge
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](https://hub.docker.com/r/shashikanthg/mcp-ssh-bridge)
 
@@ -14,6 +14,7 @@ SSH MCP Bridge is a [Model Context Protocol (MCP)](https://modelcontextprotocol.
 - **Credential isolation** - AI agents never see IPs, passwords, or SSH keys
 - **Full auditability** - Track all commands executed across your infrastructure
 - **Self-discovery** - Agents automatically discover available servers and their capabilities
+- **Bidirectional file transfer** - Upload and download files through SFTP without exposing SSH credentials
 - **Goal-oriented automation** - Agents can deploy apps, configure services, and resolve issues autonomously
 
 ## Use Cases
@@ -21,6 +22,7 @@ SSH MCP Bridge is a [Model Context Protocol (MCP)](https://modelcontextprotocol.
 ### Homelab & Self-Hosted Infrastructure
 - Automate server maintenance and updates
 - Deploy applications across multiple nodes
+- Move config files, build artifacts, logs, and backups between the MCP server host and SSH targets
 - Configure reverse proxies and SSL certificates
 - Manage Docker containers and Kubernetes clusters
 - Monitor and troubleshoot issues
@@ -55,6 +57,7 @@ An agent can:
 | **Dual Transport** | STDIO (local) + HTTP/SSE (remote) deployment modes |
 | **Security First** | OAuth 2.0/OIDC authentication, credential isolation |
 | **Auditability** | Complete logging of all SSH commands and sessions |
+| **SFTP File Transfer** | Upload/download files with path allowlists, size limits, and SHA-256 metadata |
 | **Self-Discovery** | Servers advertise their capabilities to agents |
 | **Multi-Server** | Orchestrate across unlimited SSH hosts |
 | **Production Ready** | Docker deployment, health checks, session management |
@@ -63,7 +66,7 @@ An agent can:
 
 ## Prerequisites
 
-- **Python 3.9+** (Python 3.12+ recommended)
+- **Python 3.10+** (Python 3.12+ recommended)
 - **SSH access** to your servers with key-based authentication
 - One of:
   - **Claude Desktop** (for local use)
@@ -140,6 +143,15 @@ hosts:
 session:
   idle_timeout: 30
   max_sessions_per_host: 5
+
+security:
+  allowed_local_paths:
+    - "~/Downloads"
+    - "/tmp"
+  allowed_remote_write_paths:
+    - "~"
+    - "/tmp"
+  max_file_transfer_mb: 100
 ```
 
 See [examples/](examples/) for more configuration options including OAuth setup.
@@ -205,15 +217,21 @@ is on the same machine running Codex, Claude, or another MCP client. In HTTP
 mode, `local_path` is on the remote machine running `ssh-mcp-bridge`, not on
 the laptop connecting to it.
 
+For HTTP deployments, use a server-side staging directory such as
+`/var/lib/ssh-mcp-bridge/transfers`. See [File Transfer Guide](docs/FILE_TRANSFER.md)
+for the complete transfer model and policy examples.
+
 ## Documentation
 
 - **[Quick Start Guide](docs/QUICKSTART.md)** - Get running in 5 minutes
 - **[Installation Guide](docs/INSTALLATION.md)** - Detailed installation instructions
 - **[Configuration Reference](docs/CONFIGURATION.md)** - All configuration options
+- **[File Transfer Guide](docs/FILE_TRANSFER.md)** - STDIO and HTTP upload/download semantics
 - **[Docker Deployment](docs/DOCKER.md)** - Container deployment guide
 - **[ChatGPT Integration](docs/CHATGPT_INTEGRATION.md)** - OAuth setup for ChatGPT
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - Technical deep dive
 - **[Security Best Practices](docs/SECURITY.md)** - Securing your deployment
+- **[2.1.0 Release Notes](docs/releases/2.1.0.md)** - SFTP file-transfer release details
 
 ## Docker Deployment
 
@@ -241,6 +259,7 @@ See [docs/DOCKER.md](docs/DOCKER.md) for more deployment options.
 - **OAuth 2.0 support**: Integrate with Auth0, Azure AD, Keycloak, etc.
 - **Audit logging**: All commands logged with timestamps and user context
 - **Session isolation**: Each host maintains independent sessions
+- **File-transfer allowlists**: Upload/download paths are scoped by configuration
 - **Non-root containers**: Docker images run as unprivileged user
 - **Configurable access**: Control which servers agents can access
 
@@ -283,7 +302,7 @@ Built with:
 
 ## Roadmap
 
-- [ ] File transfer support (SCP/SFTP)
+- [x] Bidirectional file transfer support (SFTP)
 - [ ] Multi-hop SSH (bastion/jump hosts)
 - [ ] Resource definitions for server state
 - [ ] Prompt templates for common operations
