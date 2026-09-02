@@ -192,8 +192,18 @@ Agents can use these tools to interact with your servers:
 - **`list_hosts()`** - Discover available SSH servers
 - **`execute_command(host, command)`** - Execute commands on specific servers
 - **`get_working_directory(host)`** - Get current working directory
+- **`get_file_transfer_config()`** - Show file-transfer limits and path policy
+- **`stat_remote_path(host, remote_path)`** - Get metadata for a remote file or directory
+- **`list_remote_directory(host, remote_path, limit)`** - List files on a remote host
+- **`download_file(host, remote_path, local_path, overwrite)`** - Download remote file to the MCP server filesystem
+- **`upload_file(host, local_path, remote_path, overwrite)`** - Upload file from the MCP server filesystem to a remote host
 - **`close_session(host)`** - Close SSH session
 - **`get_session_stats()`** - View active sessions and statistics
+
+File transfers are bidirectional but server-side. In STDIO mode, `local_path`
+is on the same machine running Codex, Claude, or another MCP client. In HTTP
+mode, `local_path` is on the remote machine running `ssh-mcp-bridge`, not on
+the laptop connecting to it.
 
 ## Documentation
 

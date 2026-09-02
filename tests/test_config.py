@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from ssh_mcp_bridge.config import HostConfig, SessionConfig, load_config
+from ssh_mcp_bridge.models.config import HostConfig, SecurityConfig, SessionConfig, load_config
 
 
 def test_host_config_creation():
@@ -49,6 +49,14 @@ hosts:
 session:
   idle_timeout: 60
   max_sessions_per_host: 10
+
+security:
+  allowed_local_paths:
+    - "/tmp"
+  allowed_remote_write_paths:
+    - "~"
+    - "/tmp"
+  max_file_transfer_mb: 50
 """
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
@@ -65,6 +73,9 @@ session:
 
         assert config.session.idle_timeout == 60
         assert config.session.max_sessions_per_host == 10
+        assert config.security.allowed_local_paths == ["/tmp"]
+        assert config.security.allowed_remote_write_paths == ["~", "/tmp"]
+        assert config.security.max_file_transfer_mb == 50
 
         # Test get_host
         host = config.get_host("server1")
@@ -82,3 +93,17 @@ def test_load_config_file_not_found():
     """Test loading configuration from non-existent file."""
     with pytest.raises(FileNotFoundError):
         load_config(Path("/nonexistent/config.yaml"))
+
+
+def test_security_config_defaults():
+    """Test file-transfer security defaults."""
+    security = SecurityConfig()
+    assert security.allowed_local_paths == ["/tmp"]
+    assert security.allowed_remote_write_paths == ["~", "/tmp"]
+    assert security.max_file_transfer_mb == 100
+
+
+def test_security_config_rejects_invalid_size_limit():
+    """Test file-transfer size limit validation."""
+    with pytest.raises(ValueError, match="max_file_transfer_mb"):
+        SecurityConfig(max_file_transfer_mb=0)

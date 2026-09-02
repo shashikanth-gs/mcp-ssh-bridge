@@ -285,6 +285,58 @@ session:
   cleanup_interval: 60  # Check every 60 seconds
 ```
 
+## File Transfer Configuration
+
+File transfer uses SFTP over the same SSH host configuration as command
+execution. Transfers are bidirectional:
+
+- `download_file` copies from a configured SSH host to the MCP server filesystem.
+- `upload_file` copies from the MCP server filesystem to a configured SSH host.
+
+The meaning of "local path" depends on transport:
+
+- In STDIO mode, local paths are on the same machine running the MCP client.
+- In HTTP mode, local paths are on the remote machine running `ssh-mcp-bridge`,
+  not on the laptop or HTTP client connecting to it.
+
+```yaml
+security:
+  allowed_local_paths:
+    - "~/Downloads"
+    - "/tmp"
+  allowed_remote_write_paths:
+    - "~"
+    - "/tmp"
+  max_file_transfer_mb: 100
+```
+
+### File Transfer Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `allowed_local_paths` | list | `["/tmp"]` | Server-local paths allowed as upload sources and download destinations |
+| `allowed_remote_write_paths` | list | `["~", "/tmp"]` | Remote SSH host paths allowed as upload destinations |
+| `max_file_transfer_mb` | integer | `100` | Maximum upload/download file size |
+
+### HTTP Mode Example
+
+When deploying the MCP server on a remote host, create a transfer staging
+directory on that host and allow only that path:
+
+```yaml
+security:
+  allowed_local_paths:
+    - "/var/lib/ssh-mcp-bridge/transfers"
+  allowed_remote_write_paths:
+    - "~"
+    - "/tmp"
+  max_file_transfer_mb: 100
+```
+
+With that setup, a laptop connected to the HTTP MCP server cannot directly
+upload `/Users/me/file.txt`; the file must first exist on the MCP server host,
+or the client must run this bridge in STDIO mode.
+
 ## Logging Configuration
 
 ### Log Levels
@@ -411,6 +463,16 @@ session:
   idle_timeout: 30
   max_sessions_per_host: 5
   cleanup_interval: 60
+
+# File-transfer policy
+security:
+  allowed_local_paths:
+    - "/var/lib/ssh-mcp-bridge/transfers"
+    - "/tmp"
+  allowed_remote_write_paths:
+    - "~"
+    - "/tmp"
+  max_file_transfer_mb: 100
 ```
 
 ## Security Best Practices
@@ -436,7 +498,9 @@ session:
 
 6. **Minimal Permissions**: Use SSH users with minimal required permissions
 
-7. **Audit Logging**: Enable detailed logging for compliance
+7. **File Transfer Scope**: In HTTP mode, keep `allowed_local_paths` limited to a staging directory on the MCP server host
+
+8. **Audit Logging**: Enable detailed logging for compliance
 
 ## Next Steps
 

@@ -96,7 +96,9 @@ class SshSession:
                 connect_kwargs["pkey"] = pkey
             except Exception:
                 try:
-                    pkey = paramiko.Ed25519Key.from_private_key_file(self.host_config.private_key_path)
+                    pkey = paramiko.Ed25519Key.from_private_key_file(
+                        self.host_config.private_key_path
+                    )
                     connect_kwargs["pkey"] = pkey
                 except Exception as e:
                     raise SshConnectionError(self.host_config.name, e)
@@ -154,6 +156,15 @@ class SshSession:
             logger.error(f"Command execution failed: {e}")
             self.close()
             raise
+
+    def open_sftp(self) -> paramiko.SFTPClient:
+        """Open an SFTP client on the current SSH connection."""
+        if not self.connected:
+            self.connect()
+        if not self.client:
+            raise RuntimeError("SSH client not available")
+        self.last_access = time.time()
+        return self.client.open_sftp()
 
     def _preprocess_command(self, command: str) -> str:
         """Preprocess command to disable pagers."""

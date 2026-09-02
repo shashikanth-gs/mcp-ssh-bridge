@@ -43,7 +43,7 @@ class ServerConfig:
         # Load API key from environment if not set
         if not self.api_key:
             self.api_key = os.getenv("API_KEY")
-        
+
         # Initialize OAuth config if not set
         if self.oauth is None:
             # Check if AUTH_MODE is set to oidc in environment
@@ -84,12 +84,28 @@ class SessionConfig:
 
 
 @dataclass
+class SecurityConfig:
+    """Security controls for command and file-transfer operations."""
+
+    allowed_local_paths: List[str] = field(default_factory=lambda: ["/tmp"])
+    allowed_remote_write_paths: List[str] = field(default_factory=lambda: ["~", "/tmp"])
+    max_file_transfer_mb: int = 100
+
+    def __post_init__(self):
+        """Expand local allowlist paths."""
+        self.allowed_local_paths = [os.path.expanduser(path) for path in self.allowed_local_paths]
+        if self.max_file_transfer_mb < 1:
+            raise ValueError("max_file_transfer_mb must be greater than 0")
+
+
+@dataclass
 class Config:
     """Main configuration."""
 
     server: ServerConfig = field(default_factory=ServerConfig)
     hosts: List[HostConfig] = field(default_factory=list)
     session: SessionConfig = field(default_factory=SessionConfig)
+    security: SecurityConfig = field(default_factory=SecurityConfig)
 
     def get_host(self, name: str) -> Optional[HostConfig]:
         """Get host configuration by name."""
@@ -109,28 +125,28 @@ def load_config(config_path: Path) -> Config:
 
     # Parse server config with backward compatibility
     server_data = data.get("server", {})
-    
+
     # Handle old 'http_port' key
     if "http_port" in server_data:
         server_data["port"] = server_data.pop("http_port")
-    
+
     # Handle old 'stdio_enabled' key
     if "stdio_enabled" in server_data:
         server_data["enable_stdio"] = server_data.pop("stdio_enabled")
-    
+
     # Default to HTTP mode if stdio_enabled was false
     if not server_data.get("enable_stdio", True):
         server_data["enable_http"] = True
-    
+
     # Parse OAuth config if present
     oauth_data = server_data.pop("oauth", None)
     oauth_config = None
     if oauth_data:
         oauth_config = OAuthConfig(**oauth_data)
-    
+
     # Remove auth section (not part of ServerConfig) - kept for backward compatibility
     server_data.pop("auth", None)
-    
+
     server = ServerConfig(**server_data, oauth=oauth_config)
 
     # Parse hosts
@@ -140,13 +156,26 @@ def load_config(config_path: Path) -> Config:
 
     # Parse session config with backward compatibility
     session_data = data.get("session", {})
-    
+
     # Remove unknown keys
     session_data.pop("persist_sessions", None)
-    
+
     session = SessionConfig(**session_data)
-    
+
+    # Parse security config with backward compatibility
+    security_data = data.get("security", {})
+    if "allowedLocalPaths" in security_data:
+        security_data["allowed_local_paths"] = security_data.pop("allowedLocalPaths")
+    if "allowedRemoteWritePaths" in security_data:
+        security_data["allowed_remote_write_paths"] = security_data.pop("allowedRemoteWritePaths")
+    if "maxFileTransferMb" in security_data:
+        security_data["max_file_transfer_mb"] = security_data.pop("maxFileTransferMb")
+    # Ignore policy keys used by other SSH MCP servers.
+    security_data.pop("whitelist", None)
+    security_data.pop("blacklist", None)
+    security = SecurityConfig(**security_data)
+
     # Parse logging config (not used but might be in config)
     # Just ignore it for now
-    
-    return Config(server=server, hosts=hosts, session=session)
+
+    return Config(server=server, hosts=hosts, session=session, security=security)

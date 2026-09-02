@@ -46,3 +46,13 @@ session:
   idle_timeout: 30            # Close sessions after 30 minutes of inactivity
   max_sessions_per_host: 5    # Maximum 5 concurrent sessions per host
   cleanup_interval: 60        # Check for idle sessions every 60 seconds
+
+# File-transfer policy. In STDIO mode, local paths are on the client machine.
+security:
+  allowed_local_paths:
+    - "~/Downloads"
+    - "/tmp"
+  allowed_remote_write_paths:
+    - "~"
+    - "/tmp"
+  max_file_transfer_mb: 100

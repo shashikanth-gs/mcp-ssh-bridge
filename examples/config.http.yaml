@@ -72,3 +72,14 @@ session:
   idle_timeout: 30
   max_sessions_per_host: 5
   cleanup_interval: 60
+
+# File-transfer policy. In HTTP mode, local paths are on the MCP server host,
+# not on the laptop or remote MCP client connecting over HTTP.
+security:
+  allowed_local_paths:
+    - "/var/lib/ssh-mcp-bridge/transfers"
+    - "/tmp"
+  allowed_remote_write_paths:
+    - "~"
+    - "/tmp"
+  max_file_transfer_mb: 100

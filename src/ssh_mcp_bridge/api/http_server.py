@@ -32,6 +32,39 @@ class GetWorkingDirectoryRequest(BaseModel):
     host: str
 
 
+class RemotePathRequest(BaseModel):
+    """Request model for remote path operations."""
+
+    host: str
+    remote_path: str
+
+
+class ListRemoteDirectoryRequest(BaseModel):
+    """Request model for list_remote_directory."""
+
+    host: str
+    remote_path: str
+    limit: int = 200
+
+
+class DownloadFileRequest(BaseModel):
+    """Request model for download_file."""
+
+    host: str
+    remote_path: str
+    local_path: str
+    overwrite: bool = False
+
+
+class UploadFileRequest(BaseModel):
+    """Request model for upload_file."""
+
+    host: str
+    local_path: str
+    remote_path: str
+    overwrite: bool = False
+
+
 class CloseSessionRequest(BaseModel):
     """Request model for close_session."""
 
@@ -40,53 +73,53 @@ class CloseSessionRequest(BaseModel):
 
 def create_fastmcp_auth(server_config: ServerConfig):
     """Create FastMCP auth provider based on configuration.
-    
+
     Uses Auth0Provider for full OAuth flow including:
     - Dynamic Client Registration (DCR) for MCP clients
     - OAuth authorization and token endpoints
     - JWT token validation
     - OAuth metadata discovery endpoints
-    
+
     Args:
         server_config: Server configuration with OAuth settings
-        
+
     Returns:
         Auth0Provider instance or None if OAuth is disabled
     """
     if not server_config.oauth or not server_config.oauth.enabled:
         logger.info("OAuth disabled - no authentication configured")
         return None
-    
+
     oauth = server_config.oauth
-    
+
     # Validate required OAuth settings
     if not oauth.issuer or not oauth.audience:
         logger.warning("OAuth enabled but issuer or audience not configured")
         return None
-    
+
     # Get client credentials from environment or config
     client_id = os.environ.get("AUTH0_CLIENT_ID") or getattr(oauth, "client_id", None)
     client_secret = os.environ.get("AUTH0_CLIENT_SECRET") or getattr(oauth, "client_secret", None)
-    
+
     if not client_id or not client_secret:
         logger.warning("OAuth enabled but client_id or client_secret not configured")
         logger.info("Set AUTH0_CLIENT_ID and AUTH0_CLIENT_SECRET environment variables")
         return None
-    
+
     try:
         from fastmcp.server.auth.providers.auth0 import Auth0Provider
-        
+
         # Construct OIDC config URL from issuer
         issuer = oauth.issuer.rstrip("/")
         config_url = f"{issuer}/.well-known/openid-configuration"
-        
+
         # Base URL is the public URL where the server is accessible
         # No /sse prefix needed - FastMCP is mounted at root
         base_url = os.environ.get("BASE_URL", "https://ssh-mcp.k8s.http2xx.io")
-        
+
         # Get JWT signing key for token issuance (optional, defaults to derived from client_secret)
         jwt_signing_key = os.environ.get("JWT_SIGNING_KEY")
-        
+
         auth = Auth0Provider(
             config_url=config_url,
             client_id=client_id,
@@ -100,14 +133,14 @@ def create_fastmcp_auth(server_config: ServerConfig):
             # Disable consent screen for automated MCP clients (optional)
             require_authorization_consent=False,
         )
-        
+
         logger.info(f"Auth0Provider configured:")
         logger.info(f"  Config URL: {config_url}")
         logger.info(f"  Audience: {oauth.audience}")
         logger.info(f"  Base URL: {base_url}")
-        
+
         return auth
-        
+
     except ImportError as e:
         logger.error(f"Failed to import Auth0Provider: {e}")
         logger.error("Make sure fastmcp >= 2.13.0 is installed")
@@ -131,14 +164,12 @@ def create_http_server(
         Configured FastAPI application
     """
     oauth_enabled = server_config.oauth and server_config.oauth.enabled
-    
+
     app = FastAPI(
         title="SSH MCP Bridge API",
         description="HTTP API for SSH MCP Bridge - Execute commands on SSH hosts securely with OAuth authentication",
         version="2.0.1",
-        servers=[
-            {"url": "https://ssh-mcp.k8s.http2xx.io", "description": "Production server"}
-        ],
+        servers=[{"url": "https://ssh-mcp.k8s.http2xx.io", "description": "Production server"}],
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
@@ -146,10 +177,10 @@ def create_http_server(
 
     # Create FastMCP auth provider (Auth0Provider for full OAuth flow)
     fastmcp_auth = create_fastmcp_auth(server_config)
-    
+
     # Create MCP server with authentication
     mcp_server = create_mcp_server(service, "SSH Bridge", auth=fastmcp_auth)
-    
+
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -180,18 +211,18 @@ def create_http_server(
         if server_config.api_key:
             if token == server_config.api_key:
                 return {"auth_type": "api_key"}
-        
+
         # For OAuth tokens, validate using the auth provider
         if oauth_enabled and fastmcp_auth:
             try:
                 # Use the auth provider to validate the token
                 # This will verify signature, expiry, audience, etc.
-                if hasattr(fastmcp_auth, 'validate_token'):
+                if hasattr(fastmcp_auth, "validate_token"):
                     # Auth0Provider has validate_token method
                     validated = await fastmcp_auth.validate_token(token)
                     if validated:
                         return {"auth_type": "oauth", "validated": True}
-                elif hasattr(fastmcp_auth, '_verify_token'):
+                elif hasattr(fastmcp_auth, "_verify_token"):
                     # Try internal method
                     validated = await fastmcp_auth._verify_token(token)
                     if validated:
@@ -211,6 +242,7 @@ def create_http_server(
     async def root():
         """Root endpoint - redirects to API documentation."""
         from fastapi.responses import RedirectResponse
+
         return RedirectResponse(url="/docs")
 
     @app.get("/health")
@@ -255,6 +287,77 @@ def create_http_server(
             logger.error(f"Error getting working directory: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
+    @app.get("/api/v1/file-transfer-config", dependencies=[Depends(verify_authentication)])
+    async def get_file_transfer_config():
+        """Get file-transfer limits and path policy."""
+        try:
+            return service.get_file_transfer_config()
+        except Exception as e:
+            logger.error(f"Error getting file-transfer config: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.post("/api/v1/remote/stat", dependencies=[Depends(verify_authentication)])
+    async def stat_remote_path(request: RemotePathRequest):
+        """Get metadata for a remote path."""
+        try:
+            return service.stat_remote_path(request.host, request.remote_path)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        except Exception as e:
+            logger.error(f"Error statting remote path: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.post("/api/v1/remote/list", dependencies=[Depends(verify_authentication)])
+    async def list_remote_directory(request: ListRemoteDirectoryRequest):
+        """List a remote directory."""
+        try:
+            return service.list_remote_directory(request.host, request.remote_path, request.limit)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        except Exception as e:
+            logger.error(f"Error listing remote directory: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.post("/api/v1/download", dependencies=[Depends(verify_authentication)])
+    async def download_file(request: DownloadFileRequest):
+        """Download a remote file to the MCP server filesystem."""
+        try:
+            return service.download_file(
+                request.host,
+                request.remote_path,
+                request.local_path,
+                request.overwrite,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        except Exception as e:
+            logger.error(f"Error downloading file: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.post("/api/v1/upload", dependencies=[Depends(verify_authentication)])
+    async def upload_file(request: UploadFileRequest):
+        """Upload a file from the MCP server filesystem to a remote host."""
+        try:
+            return service.upload_file(
+                request.host,
+                request.local_path,
+                request.remote_path,
+                request.overwrite,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except FileNotFoundError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        except Exception as e:
+            logger.error(f"Error uploading file: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
     @app.post("/api/v1/close-session", dependencies=[Depends(verify_authentication)])
     async def close_session(request: CloseSessionRequest):
         """Close SSH session for a host."""
@@ -284,10 +387,10 @@ def create_http_server(
     try:
         # Get FastMCP's SSE app - it handles auth internally
         mcp_sse_app = mcp_server.http_app(path="/mcp", transport="sse")
-        
+
         # Mount at root so MCP endpoint is at /mcp and OAuth at root level
         app.mount("", mcp_sse_app)
-        
+
         if fastmcp_auth:
             logger.info("FastMCP SSE endpoint mounted at /mcp with Auth0 OAuth")
             logger.info("OAuth endpoints available at /register, /authorize, /token")
