@@ -11,9 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     
     # Optional: you can define an environment in GitHub repository settings for PyPI
-    environment:
-      name: pypi
-      url: https://pypi.org/p/ssh-mcp-bridge
       
     permissions:
       # IMPORTANT: This permission is required for Trusted Publishing via OIDC
