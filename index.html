@@ -1,299 +1,281 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCP SSH Bridge | AI Agents Meet Secure SSH Automation</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f7f5" />
+    <meta name="author" content="Shashikanth GS" />
+    <meta name="description" content="MCP SSH Bridge - AI Agents Meet Secure SSH Automation." />
+    <meta property="og:title" content="MCP SSH Bridge — Secure AI Server Automation" />
+    <meta property="og:description" content="Seamlessly connect Claude, ChatGPT, and other LLMs to your remote infrastructure via the Model Context Protocol." />
+    <title>MCP SSH Bridge — AI Agents Meet Secure SSH Automation</title>
     
-    <!-- SEO Optimization Meta Tags -->
-    <meta name="description" content="MCP SSH Bridge empowers AI agents like Claude and ChatGPT to securely manage and automate remote SSH servers. Built with the Model Context Protocol (MCP). Developed by Shashi Kanth.">
-    <meta name="keywords" content="MCP, Model Context Protocol, SSH Bridge, AI Agents, ChatGPT, Claude, Server Management, Automation, Shashi Kanth, LLM Tooling, Developer Tools, System Administration">
-    <meta name="author" content="Shashi Kanth">
-    
-    <!-- Open Graph / Social -->
-    <meta property="og:title" content="MCP SSH Bridge - Secure AI Server Automation">
-    <meta property="og:description" content="Bridge the gap between AI Agents and your infrastructure. Secure, auditable, and powerful SSH automation via the Model Context Protocol.">
-    <meta property="og:type" content="website">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3b82f6',
-                        secondary: '#1e293b',
-                        accent: '#10b981',
-                        dark: '#0f172a'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['Fira Code', 'monospace']
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
-    
-    <!-- FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Mermaid.js for Diagrams -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.4.0/dist/mermaid.min.js"></script>
     
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .gradient-text {
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-image: linear-gradient(90deg, #3b82f6, #10b981);
-        }
-        .hero-bg {
-            background: radial-gradient(circle at top right, #1e293b, #0f172a);
-        }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+      :root {
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #16201d;
+        background: #f5f7f5;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        --ink: #16201d;
+        --muted: #62716c;
+        --line: rgba(22, 32, 29, 0.12);
+        --green: #31866f;
+        --green-dark: #1f6655;
+        --green-pale: #dff2eb;
+        --paper: #fbfcfb;
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body { margin: 0; min-width: 320px; min-height: 100vh; background: #f5f7f5; }
+      button, input { font: inherit; }
+      button, a { -webkit-tap-highlight-color: transparent; }
+      a { color: inherit; text-decoration: none; }
+      ::selection { color: #fff; background: var(--green); }
+
+      /* Shell & Background */
+      .site-shell { position: relative; min-height: 100vh; overflow: hidden; background: linear-gradient(180deg, #f8faf8 0%, #f3f6f3 58%, #eef3f0 100%); }
+      .site-shell::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .38; background-image: linear-gradient(rgba(22,32,29,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(22,32,29,.025) 1px, transparent 1px); background-size: 48px 48px; mask-image: linear-gradient(to bottom, #000, transparent 46%); -webkit-mask-image: linear-gradient(to bottom, #000, transparent 46%); }
+      .ambient { position: absolute; border-radius: 999px; filter: blur(40px); pointer-events: none; opacity: 0.6;}
+      .ambient-one { width: 600px; height: 600px; right: -200px; top: -100px; background: radial-gradient(circle, rgba(49,134,111,.15), rgba(49,134,111,0) 70%); }
+      .ambient-two { width: 480px; height: 480px; left: -240px; top: 400px; background: radial-gradient(circle, rgba(125,151,244,.1), rgba(125,151,244,0) 70%); }
+      .section-wrap { width: min(1180px, calc(100% - 48px)); margin: 0 auto; position: relative; z-index: 1; }
+
+      /* Navigation */
+      .nav-shell { position: fixed; z-index: 50; top: 16px; left: 50%; transform: translateX(-50%); width: min(1180px, calc(100% - 32px)); height: 62px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 18px; border: 1px solid rgba(22,32,29,.1); border-radius: 17px; background: rgba(252,253,252,.82); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 12px 40px rgba(34,54,47,.08); }
+      .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 800; letter-spacing: -.035em; color: var(--ink); }
+      .brand i { color: var(--green); font-size: 1.2em; }
+      .nav-shell nav { display: flex; align-items: center; gap: 6px; }
+      .nav-shell nav a { padding: 10px 13px; border-radius: 10px; font-size: 13px; font-weight: 600; color: #4f5e59; transition: color .2s, background .2s; }
+      .nav-shell nav a:hover { color: var(--ink); background: rgba(22,32,29,.05); }
+      .nav-shell .nav-github { color: white; background: var(--ink); padding-inline: 15px; display: inline-flex; align-items: center; gap: 7px; }
+      .nav-shell .nav-github:hover { color: white; background: #2b3834; }
+
+      /* Hero Section */
+      .hero { min-height: 720px; padding: 160px 0 72px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+      .hero-copy { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+      
+      @keyframes breathe { 0%, 100% { box-shadow: 0 0 0 3px rgba(68,180,147,.15); } 50% { box-shadow: 0 0 0 6px rgba(68,180,147,.3); } }
+      .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--green-dark); font-size: 12px; line-height: 1; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; padding: 8px 16px; background: rgba(49,134,111,0.08); border-radius: 99px; border: 1px solid rgba(49,134,111,0.15); }
+      .eyebrow > span { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: breathe 2.2s ease-in-out infinite; }
+      
+      .hero h1 { margin: 32px 0 24px; color: var(--ink); font-size: clamp(48px, 6vw, 76px); line-height: .98; letter-spacing: -.05em; font-weight: 800; }
+      .hero h1 em { color: var(--green); font-style: normal; font-weight: 700; }
+      .hero-copy > p { max-width: 600px; margin: 0; color: var(--muted); font-size: clamp(16px, 1.8vw, 20px); line-height: 1.6; letter-spacing: -.02em; }
+      
+      .hero-actions { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 40px; }
+      .primary-button { min-height: 52px; padding: 0 24px; border-radius: 12px; display: inline-flex; align-items: center; gap: 10px; color: white; background: var(--ink); box-shadow: 0 8px 22px rgba(22,32,29,.18); font-size: 15px; font-weight: 600; transition: transform .2s, box-shadow .2s; }
+      .primary-button:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(22,32,29,.23); }
+      
+      .command-bar { min-height: 52px; display: inline-flex; align-items: center; gap: 12px; padding: 0 16px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); background: rgba(255,255,255,.8); box-shadow: 0 6px 20px rgba(25,46,39,.05); cursor: text; }
+      .command-bar code { font-family: "Fira Code", monospace; font-size: 14px; font-weight: 500; }
+      .command-bar i { color: var(--muted); }
+
+      /* Architecture Product Stage */
+      .hero-product { margin-top: 72px; width: 100%; perspective: 1400px; display: flex; justify-content: center; }
+      .product-stage { width: 100%; max-width: 1000px; border: 1px solid rgba(22,32,29,.14); border-radius: 19px; overflow: hidden; background: #fff; box-shadow: 0 38px 85px rgba(34,54,47,.16), 0 3px 10px rgba(34,54,47,.08); }
+      .stage-toolbar { height: 51px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid var(--line); background: #f8faf9; }
+      .window-dots { display: flex; gap: 6px; }
+      .window-dots i { width: 10px; height: 10px; border-radius: 50%; background: #d8ddda; }
+      .window-dots i:first-child { background: #f3a09b; }
+      .window-dots i:nth-child(2) { background: #e8cd79; }
+      .window-dots i:last-child { background: #83cfac; }
+      .stage-title { margin: 0 auto; color: #97a49f; font-size: 13px; font-weight: 600; font-family: monospace; padding-right: 46px; }
+      
+      .stage-content { padding: 48px; background: #fafcfa; overflow-x: auto; display: flex; justify-content: center; align-items: center; }
+
+      /* Custom CSS Flow Diagram */
+      .flow-diagram { display: flex; align-items: center; gap: 24px; font-family: 'Inter', sans-serif; min-width: 800px; }
+      
+      .flow-node { display: flex; flex-direction: column; align-items: center; padding: 24px; background: white; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 8px 24px rgba(22,32,29,.04); text-align: center; width: 180px; position: relative; }
+      .flow-node i { font-size: 28px; margin-bottom: 16px; }
+      .flow-node.ai i { color: #3b82f6; }
+      .flow-node.mcp i { color: var(--muted); }
+      .flow-node.bridge { border-color: var(--green); box-shadow: 0 8px 24px rgba(49,134,111,.1); }
+      .flow-node.bridge i { color: var(--green); }
+      .flow-node.server i { color: #f43f5e; }
+      .flow-node h4 { margin: 0 0 6px 0; font-size: 15px; font-weight: 700; color: var(--ink); }
+      .flow-node p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+      .flow-edge { flex: 1; display: flex; flex-direction: column; align-items: center; position: relative; }
+      .flow-line { height: 2px; width: 60px; background: var(--line); position: relative; }
+      .flow-line::after { content: ''; position: absolute; right: -2px; top: -4px; border-width: 5px; border-style: solid; border-color: transparent transparent transparent var(--line); }
+      .flow-line::before { content: ''; position: absolute; left: -2px; top: -4px; border-width: 5px; border-style: solid; border-color: transparent var(--line) transparent transparent; }
+      .flow-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; white-space: nowrap; background: #fafcfa; padding: 0 8px; z-index: 1; }
+
+      .flow-group { display: flex; flex-direction: column; gap: 16px; }
+      
+      /* Target links */
+      .target-edges { display: flex; flex-direction: column; justify-content: space-around; height: 180px; width: 60px; position: relative; }
+      .target-edges::before { content: ''; position: absolute; left: 0; top: 30px; bottom: 30px; width: 2px; background: var(--line); }
+      .target-edge-line { height: 2px; width: 100%; background: var(--line); position: relative; }
+      .target-edge-line::after { content: ''; position: absolute; right: -2px; top: -4px; border-width: 5px; border-style: solid; border-color: transparent transparent transparent var(--line); }
+
+      /* Features */
+      .features { padding: 120px 0; border-top: 1px solid var(--line); }
+      .section-header { text-align: center; margin-bottom: 64px; }
+      .section-header h2 { font-size: 32px; font-weight: 800; letter-spacing: -.03em; margin: 0 0 16px 0; color: var(--ink); }
+      .section-header p { font-size: 18px; color: var(--muted); margin: 0; max-width: 600px; margin: 0 auto; }
+
+      .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px; }
+      .feature-card { padding: 32px; background: white; border: 1px solid var(--line); border-radius: 16px; transition: box-shadow .2s, transform .2s; }
+      .feature-card:hover { box-shadow: 0 12px 32px rgba(22,32,29,.06); transform: translateY(-2px); }
+      .feature-icon { width: 48px; height: 48px; border-radius: 12px; background: rgba(49,134,111,0.1); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; }
+      .feature-icon i { font-size: 20px; color: var(--green); }
+      .feature-card h3 { font-size: 18px; font-weight: 700; margin: 0 0 12px 0; color: var(--ink); }
+      .feature-card p { font-size: 15px; color: var(--muted); line-height: 1.6; margin: 0; }
+
+      /* Footer */
+      .site-footer { border-top: 1px solid var(--line); padding: 48px 0; text-align: center; background: white; }
+      .site-footer p { color: var(--muted); font-size: 14px; font-weight: 500; }
+      .site-footer a { color: var(--ink); font-weight: 600; transition: color .2s; }
+      .site-footer a:hover { color: var(--green); }
+      
+      @media (max-width: 768px) {
+        .hero { padding: 120px 0 40px; }
+        .flow-diagram { flex-direction: column; min-width: auto; }
+        .flow-edge { width: 2px; height: 40px; flex: none; }
+        .flow-line { width: 2px; height: 40px; }
+        .flow-line::after, .flow-line::before { display: none; }
+        .target-edges { display: none; }
+      }
     </style>
-</head>
-<body class="bg-gray-50 text-gray-800 antialiased selection:bg-primary selection:text-white">
+  </head>
+  <body>
+    <div class="site-shell">
+      <div class="ambient ambient-one"></div>
+      <div class="ambient ambient-two"></div>
+      
+      <div class="nav-shell">
+        <a href="#" class="brand">
+          <i class="fa-solid fa-network-wired"></i>
+          MCP SSH Bridge
+        </a>
+        <nav>
+          <a href="docs/QUICKSTART.md">Docs</a>
+          <a href="https://github.com/shashikanth-gs/mcp-ssh-bridge" class="nav-github">
+            <i class="fa-brands fa-github"></i> GitHub
+          </a>
+        </nav>
+      </div>
 
-    <!-- Navigation -->
-    <nav class="bg-dark text-white p-4 sticky top-0 z-50 border-b border-gray-800">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-2 font-bold text-xl tracking-tight">
-                <i class="fa-solid fa-network-wired text-accent"></i>
-                <span>MCP SSH Bridge</span>
+      <main class="section-wrap">
+        <section class="hero">
+          <div class="hero-copy">
+            <div class="eyebrow">
+              <span></span> AI Server Automation
             </div>
-            <div class="hidden md:flex space-x-6 text-sm font-medium">
-                <a href="#features" class="hover:text-primary transition">Features</a>
-                <a href="#use-cases" class="hover:text-primary transition">Use Cases</a>
-                <a href="#architecture" class="hover:text-primary transition">Architecture</a>
-                <a href="QUICKSTART.md" class="hover:text-primary transition">Docs</a>
-            </div>
-            <div>
-                <a href="https://github.com/shashikanth-gs/mcp-ssh-bridge" class="bg-white text-dark px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-200 transition shadow">
-                    <i class="fa-brands fa-github mr-1"></i> GitHub
-                </a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <header class="hero-bg text-white pt-24 pb-32 relative overflow-hidden">
-        <!-- Abstract Shapes -->
-        <div class="absolute top-0 right-0 -mr-32 -mt-32 w-96 h-96 rounded-full bg-primary opacity-20 blur-3xl"></div>
-        <div class="absolute bottom-0 left-0 -ml-32 -mb-32 w-96 h-96 rounded-full bg-accent opacity-20 blur-3xl"></div>
-
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6">
-                Give your AI Agents <br />
-                <span class="gradient-text">SSH Superpowers</span>
-            </h1>
-            <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-300 mb-10 leading-relaxed">
-                Seamlessly connect Claude, ChatGPT, and other LLMs to your remote infrastructure via the Model Context Protocol. Automate servers, databases, and deployments securely.
-            </p>
-            <div class="flex justify-center space-x-4">
-                <a href="QUICKSTART.md" class="bg-primary hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-bold text-lg shadow-lg shadow-blue-500/30 transition transform hover:-translate-y-1">
-                    Get Started <i class="fa-solid fa-arrow-right ml-2"></i>
-                </a>
-                <a href="#architecture" class="glass-card hover:bg-gray-800 text-white px-8 py-3 rounded-lg font-bold text-lg transition border border-gray-600">
-                    How it works
-                </a>
-            </div>
-            <div class="mt-8 text-sm text-gray-400">
-                Created by <span class="font-semibold text-white">Shashi Kanth</span>
-            </div>
-        </div>
-    </header>
-
-    <!-- Use Cases Graphically -->
-    <section id="architecture" class="py-20 bg-white">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold text-dark">How It Works</h2>
-                <p class="text-gray-600 mt-4 max-w-2xl mx-auto">A secure, bidirectional bridge between modern AI reasoning engines and your raw compute infrastructure.</p>
-            </div>
-
-            <!-- Mermaid Diagram -->
-            <div class="bg-gray-50 rounded-2xl p-8 border border-gray-100 shadow-inner flex justify-center overflow-x-auto">
-                <div class="mermaid">
-                    graph LR
-                        classDef ai fill:#f0f9ff,stroke:#0ea5e9,stroke-width:2px;
-                        classDef mcp fill:#f8fafc,stroke:#94a3b8,stroke-width:2px;
-                        classDef bridge fill:#ecfdf5,stroke:#10b981,stroke-width:2px;
-                        classDef target fill:#fff1f2,stroke:#f43f5e,stroke-width:2px;
-
-                        A[AI Agent<br/>Claude/ChatGPT]:::ai <-->|Model Context Protocol| B{MCP Client}:::mcp
-                        B <-->|STDIO / HTTP| C[SSH MCP Bridge<br/>Python App]:::bridge
-                        C <-->|Secure SSH/SFTP| D[Remote Server 1]:::target
-                        C <-->|Secure SSH/SFTP| E[Remote Server 2]:::target
-                        C <-->|Secure SSH/SFTP| F[Database Host]:::target
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features -->
-    <section id="features" class="py-20 bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold text-dark">Key Features</h2>
-            </div>
+            <h1>Give your AI Agents<br/><em>SSH Superpowers</em></h1>
+            <p>Seamlessly connect Claude, ChatGPT, and other LLMs to your remote infrastructure via the Model Context Protocol. Automate servers, databases, and deployments securely.</p>
             
-            <div class="grid md:grid-cols-3 gap-8">
-                <!-- Feature 1 -->
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
-                    <div class="w-12 h-12 bg-blue-100 text-primary rounded-xl flex items-center justify-center text-xl mb-6">
-                        <i class="fa-solid fa-terminal"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Remote Execution</h3>
-                    <p class="text-gray-600">Run shell commands natively on target machines. AI agents can analyze logs, restart services, or debug system states in real-time.</p>
+            <div class="hero-actions">
+              <a href="docs/QUICKSTART.md" class="primary-button">
+                Get Started
+              </a>
+              <div class="command-bar">
+                <i class="fa-solid fa-terminal"></i>
+                <code>pip install ssh-mcp-bridge</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-product">
+            <div class="product-stage">
+              <div class="stage-toolbar">
+                <div class="window-dots">
+                  <i></i><i></i><i></i>
                 </div>
+                <div class="stage-title">Architecture Flow</div>
+              </div>
+              <div class="stage-content">
                 
-                <!-- Feature 2 -->
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
-                    <div class="w-12 h-12 bg-green-100 text-accent rounded-xl flex items-center justify-center text-xl mb-6">
-                        <i class="fa-solid fa-file-export"></i>
+                <div class="flow-diagram">
+                  <!-- AI Agent -->
+                  <div class="flow-node ai">
+                    <i class="fa-solid fa-robot"></i>
+                    <h4>AI Agent</h4>
+                    <p>Claude Desktop, ChatGPT, or Custom Client</p>
+                  </div>
+
+                  <div class="flow-edge">
+                    <span class="flow-label">Model Context Protocol</span>
+                    <div class="flow-line"></div>
+                  </div>
+
+                  <!-- MCP Bridge -->
+                  <div class="flow-node bridge">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <h4>SSH Bridge</h4>
+                    <p>Python App (STDIO/HTTP)<br/>Access Control & SFTP</p>
+                  </div>
+
+                  <div class="flow-edge">
+                    <span class="flow-label">Secure SSH</span>
+                    <div class="flow-line"></div>
+                  </div>
+
+                  <!-- Targets -->
+                  <div class="flow-group">
+                    <div class="flow-node server">
+                      <i class="fa-solid fa-server"></i>
+                      <h4>Remote Server 1</h4>
+                      <p>Web Host / Linux</p>
                     </div>
-                    <h3 class="text-xl font-bold mb-3">SFTP File Transfer</h3>
-                    <p class="text-gray-600">Bidirectional file transfer capability. Agents can safely upload configuration files or download database dumps for analysis.</p>
+                    <div class="flow-node server">
+                      <i class="fa-solid fa-database"></i>
+                      <h4>Remote Server 2</h4>
+                      <p>Database Instance</p>
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Feature 3 -->
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
-                    <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center text-xl mb-6">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Enterprise Security</h3>
-                    <p class="text-gray-600">Strict path allowlists, command timeouts, key-based authentication, and payload size limits ensure your infrastructure remains secure.</p>
-                </div>
+              </div>
             </div>
+          </div>
+        </section>
+
+        <section class="features">
+          <div class="section-header">
+            <h2>Bridge the gap to infrastructure</h2>
+            <p>A secure, bidirectional bridge between modern AI reasoning engines and your raw compute layer.</p>
+          </div>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <div class="feature-icon">
+                <i class="fa-solid fa-terminal"></i>
+              </div>
+              <h3>Remote Execution</h3>
+              <p>Run shell commands natively on target machines. AI agents can analyze logs, restart services, or debug system states in real-time.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">
+                <i class="fa-solid fa-file-export"></i>
+              </div>
+              <h3>SFTP File Transfer</h3>
+              <p>Bidirectional file transfer capability. Agents can safely upload configuration files or download database dumps for analysis.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <h3>Enterprise Security</h3>
+              <p>Strict path allowlists, command timeouts, key-based authentication, and payload size limits ensure your infrastructure remains secure.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="section-wrap">
+          <p>Designed and developed by <a href="https://github.com/shashikanth-gs">Shashikanth GS</a></p>
         </div>
-    </section>
-
-    <!-- Use Cases -->
-    <section id="use-cases" class="py-20 bg-dark text-white">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold">Powerful Use Cases</h2>
-                <p class="text-gray-400 mt-4 max-w-2xl mx-auto">Transform how you interact with your systems by making them conversational.</p>
-            </div>
-
-            <div class="grid md:grid-cols-2 gap-12">
-                <!-- Case 1 -->
-                <div class="flex space-x-6">
-                    <div class="flex-shrink-0 mt-1">
-                        <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-primary">
-                            <i class="fa-solid fa-robot"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-bold mb-2">Automated SysAdmin</h4>
-                        <p class="text-gray-400 leading-relaxed">Ask Claude to "check why the web server is slow." The agent will SSH in, run `top`, check `/var/log/nginx`, analyze the results, and propose a fix—all in one conversation.</p>
-                    </div>
-                </div>
-
-                <!-- Case 2 -->
-                <div class="flex space-x-6">
-                    <div class="flex-shrink-0 mt-1">
-                        <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-accent">
-                            <i class="fa-solid fa-code-merge"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-bold mb-2">CI/CD & Deployments</h4>
-                        <p class="text-gray-400 leading-relaxed">Direct your AI assistant to "deploy the latest build to staging." The bridge allows the agent to upload the artifacts via SFTP, stop the service, swap binaries, and restart.</p>
-                    </div>
-                </div>
-                
-                <!-- Case 3 -->
-                <div class="flex space-x-6">
-                    <div class="flex-shrink-0 mt-1">
-                        <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-blue-400">
-                            <i class="fa-solid fa-database"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-bold mb-2">Database Troubleshooting</h4>
-                        <p class="text-gray-400 leading-relaxed">Agent can securely connect to a jump host, run SQL queries via CLI, fetch the schema, and help you optimize slow queries based on live execution plans.</p>
-                    </div>
-                </div>
-                
-                <!-- Case 4 -->
-                <div class="flex space-x-6">
-                    <div class="flex-shrink-0 mt-1">
-                        <div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-yellow-400">
-                            <i class="fa-solid fa-magnifying-glass-chart"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="text-xl font-bold mb-2">Security Auditing</h4>
-                        <p class="text-gray-400 leading-relaxed">Task the LLM with verifying security configurations. It can scan open ports, read SSH configs, and ensure compliance without needing a complex security agent installed.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Installation Snippet -->
-    <section class="py-20 bg-white">
-        <div class="max-w-4xl mx-auto px-4 text-center">
-            <h2 class="text-3xl font-bold text-dark mb-8">Ready to supercharge your AI?</h2>
-            
-            <div class="bg-gray-900 rounded-xl p-6 text-left shadow-2xl overflow-x-auto border border-gray-800">
-                <div class="flex space-x-2 mb-4">
-                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                </div>
-                <code class="text-gray-300 font-mono text-sm leading-loose">
-                    <span class="text-accent"># 1. Install via pip</span><br/>
-                    pip install ssh-mcp-bridge<br/><br/>
-                    <span class="text-accent"># 2. Configure your SSH targets</span><br/>
-                    cp ssh_mcp.yaml.example config.yaml<br/><br/>
-                    <span class="text-accent"># 3. Add to Claude Desktop Config</span><br/>
-                    {<br/>
-                    &nbsp;&nbsp;"mcpServers": {<br/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;"ssh-bridge": {<br/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"command": "python",<br/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"args": ["-m", "ssh_mcp_bridge", "--config", "/path/to/config.yaml"]<br/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;}<br/>
-                    &nbsp;&nbsp;}<br/>
-                    }
-                </code>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="bg-gray-900 border-t border-gray-800 py-12 text-center text-gray-500">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="mb-4">
-                <i class="fa-solid fa-network-wired text-3xl text-gray-700"></i>
-            </div>
-            <p class="mb-2">Open Source Project designed and developed by <a href="https://github.com/shashikanth-gs" class="text-primary hover:underline">Shashi Kanth</a>.</p>
-            <p class="text-sm">Licensed under the MIT License.</p>
-            <div class="mt-6 flex justify-center space-x-4">
-                <a href="https://github.com/shashikanth-gs/mcp-ssh-bridge" class="text-gray-400 hover:text-white transition text-xl">
-                    <i class="fa-brands fa-github"></i>
-                </a>
-                <a href="https://hub.docker.com/r/shashikanthg/mcp-ssh-bridge" class="text-gray-400 hover:text-white transition text-xl">
-                    <i class="fa-brands fa-docker"></i>
-                </a>
-            </div>
-        </div>
-    </footer>
-
-    <script>
-        mermaid.initialize({ startOnLoad: true, theme: 'default' });
-    </script>
-</body>
+      </footer>
+    </div>
+  </body>
 </html>
