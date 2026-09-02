@@ -171,11 +171,16 @@
       .feature-card p { font-size: 15px; color: var(--muted); line-height: 1.6; margin: 0; }
 
       /* Footer */
-      .site-footer { border-top: 1px solid var(--line); padding: 48px 0; text-align: center; background: white; }
-      .site-footer p { color: var(--muted); font-size: 14px; font-weight: 500; }
-      .site-footer a { color: var(--ink); font-weight: 600; transition: color .2s; }
+.site-footer { border-top: 1px solid var(--line); padding: 48px 0; background: white; }
+      .footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; }
+      .site-footer p { margin: 0; color: var(--muted); font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+      .site-footer .footer-links { display: flex; gap: 24px; }
+      .site-footer a { color: var(--ink); font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: color .2s; }
       .site-footer a:hover { color: var(--green); }
-      
+      @media (max-width: 768px) {
+        .footer-inner { flex-direction: column; text-align: center; justify-content: center; }
+      }
+
       @media (max-width: 768px) {
         .hero { padding: 120px 0 40px; }
         .flow-diagram { flex-direction: column; min-width: auto; }
@@ -355,8 +360,12 @@
       </main>
 
       <footer class="site-footer">
-        <div class="section-wrap">
-          <p>Designed and developed by <a href="https://github.com/shashikanth-gs">Shashikanth GS</a></p>
+        <div class="section-wrap footer-inner">
+          <p><i class="fa-solid fa-code" style="color: var(--green);"></i> Open source by Shashikanth GS</p>
+          <div class="footer-links">
+            <a href="https://www.shashikanth.me" target="_blank"><i class="fa-solid fa-globe"></i> shashikanth.me</a>
+            <a href="https://github.com/shashikanth-gs" target="_blank"><i class="fa-brands fa-github"></i> GitHub</a>
+          </div>
         </div>
       </footer>
     </div>
