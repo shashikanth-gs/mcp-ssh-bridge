@@ -20,7 +20,7 @@ from ssh_mcp_bridge.utils.logging import setup_logging
 logger = logging.getLogger(__name__)
 
 # Version info
-VERSION = "2.0.0"
+VERSION = "2.1.0"
 
 
 class Application:

@@ -8,12 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned Features
-- File transfer support (SCP/SFTP)
 - Multi-hop SSH (bastion/jump hosts)
 - Resource definitions for server state
 - Prompt templates for common operations
 - WebSocket support for real-time streaming
 - Prometheus metrics export
+
+## [2.1.0] - 2026-09-02
+
+### Added
+- Bidirectional SFTP file transfers with `upload_file` and `download_file` MCP tools.
+- Remote file inspection tools: `stat_remote_path` and `list_remote_directory`.
+- File-transfer policy discovery with `get_file_transfer_config`.
+- REST endpoints for server-side upload, download, remote stat, and remote directory listing in HTTP mode.
+- Configurable file-transfer safety policy:
+  - `allowed_local_paths`
+  - `allowed_remote_write_paths`
+  - `max_file_transfer_mb`
+- Unit tests for transfer policy and security config parsing.
+- Documentation for STDIO versus HTTP file-transfer path semantics.
+
+### Changed
+- The HTTP API and app version are now aligned at `2.1.0`.
+- Config examples include explicit file-transfer policy blocks.
+
+### Security
+- Local upload sources and download destinations are restricted to configured server-local paths.
+- Remote upload destinations are restricted to configured remote write paths.
+- Private local runtime config files are ignored by Git.
 
 ## [2.0.0] - 2025-12-31
 
@@ -137,6 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **v2.1.0** (2026-09-02): Added bidirectional SFTP transfer tools and transfer safety policy
 - **v2.0.0** (2025-12-31): Complete rewrite with FastMCP, dual transport, OAuth support
 - **v1.0.0** (2024): Initial release with HTTP-only custom MCP implementation
 

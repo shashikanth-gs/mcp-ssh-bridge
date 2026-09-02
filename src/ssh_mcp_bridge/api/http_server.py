@@ -168,7 +168,7 @@ def create_http_server(
     app = FastAPI(
         title="SSH MCP Bridge API",
         description="HTTP API for SSH MCP Bridge - Execute commands on SSH hosts securely with OAuth authentication",
-        version="2.0.1",
+        version="2.1.0",
         servers=[{"url": "https://ssh-mcp.k8s.http2xx.io", "description": "Production server"}],
         docs_url="/docs",
         redoc_url="/redoc",
@@ -251,7 +251,7 @@ def create_http_server(
         return {
             "status": "healthy",
             "service": "ssh-mcp-bridge",
-            "version": "2.0.1",
+            "version": "2.1.0",
             "auth_enabled": fastmcp_auth is not None,
         }
 

@@ -37,6 +37,8 @@ env/
 
 # Configuration
 config.yaml
+ssh_mcp.yaml
+ssh_mcp.json
 *.key
 *.pem
 *.crt

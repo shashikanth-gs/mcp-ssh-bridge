@@ -45,6 +45,9 @@ pip install --upgrade pip
 # Install dependencies
 pip install -r requirements.txt
 
+# Install the package in editable mode
+pip install -e .
+
 # Verify installation
 python -m ssh_mcp_bridge --version
 ```
