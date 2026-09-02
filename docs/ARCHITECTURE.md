@@ -125,6 +125,11 @@ def list_hosts() -> list[dict]:
 - `list_hosts()` - Return available SSH hosts
 - `execute_command(host, command)` - Execute SSH command
 - `get_working_directory(host)` - Get current directory
+- `get_file_transfer_config()` - Return transfer policy and path semantics
+- `stat_remote_path(host, remote_path)` - Inspect remote path metadata
+- `list_remote_directory(host, remote_path)` - List remote files
+- `download_file(host, remote_path, local_path)` - Copy from SSH target to MCP server host
+- `upload_file(host, local_path, remote_path)` - Copy from MCP server host to SSH target
 - `close_session(host)` - Close SSH session
 - `get_session_stats()` - Get session statistics
 
@@ -144,6 +149,7 @@ def list_hosts() -> list[dict]:
 - Automatic cleanup of idle sessions
 - Connection pooling and reuse
 - Resource limits enforcement
+- SFTP upload/download policy enforcement
 
 **Key Features**:
 - Session pooling per host
@@ -151,6 +157,9 @@ def list_hosts() -> list[dict]:
 - Configurable max sessions per host
 - Periodic cleanup of expired sessions
 - Thread-safe operation
+- Server-local path allowlists for file transfer
+- Remote write path allowlists for uploads
+- Transfer size limits and SHA-256 metadata
 
 **Session Lifecycle**:
 ```
@@ -308,6 +317,36 @@ def list_hosts() -> list[dict]:
    }
 ```
 
+### File Transfer Flow
+
+```
+1. Client calls upload_file or download_file
+
+2. MCP server validates transfer policy
+   - local_path must be under allowed_local_paths
+   - remote upload target must be under allowed_remote_write_paths
+   - file size must be <= max_file_transfer_mb
+   - overwrite must be explicit
+
+3. Session manager gets or creates the SSH session
+
+4. SSH session opens an SFTP channel through Paramiko
+
+5. File is copied between MCP server host and SSH target host
+
+6. Result returns metadata
+   {
+     "host": "web-server",
+     "remote_path": "/tmp/app.env",
+     "local_path": "/var/lib/ssh-mcp-bridge/transfers/app.env",
+     "bytes": 12345,
+     "sha256": "...",
+     "success": true
+   }
+```
+
+In STDIO mode, the MCP server host is usually the same laptop running the MCP client. In HTTP mode, the MCP server host is the remote machine running `ssh-mcp-bridge`, so `local_path` is not the connecting laptop's filesystem.
+
 ## Security Architecture
 
 ### Defense in Depth
@@ -332,7 +371,13 @@ def list_hosts() -> list[dict]:
 - Per-host SSH users
 - Minimal permissions
 
-**Layer 5: Audit Logging**
+**Layer 5: File Transfer Policy**
+- Server-local upload sources and download destinations are allowlisted
+- Remote upload destinations are allowlisted
+- Transfer size limits prevent accidental large copies
+- Transfer responses return metadata instead of file contents
+
+**Layer 6: Audit Logging**
 - All commands logged
 - User identity tracked
 - Timestamp and result captured
@@ -492,7 +537,7 @@ session:
 
 ### Core Dependencies
 
-- **Python 3.9+**: Runtime environment
+- **Python 3.10+**: Runtime environment
 - **FastMCP**: MCP protocol framework
 - **Paramiko**: SSH protocol implementation
 - **FastAPI**: HTTP API framework

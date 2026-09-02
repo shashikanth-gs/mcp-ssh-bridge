@@ -337,6 +337,8 @@ With that setup, a laptop connected to the HTTP MCP server cannot directly
 upload `/Users/me/file.txt`; the file must first exist on the MCP server host,
 or the client must run this bridge in STDIO mode.
 
+See [File Transfer Guide](FILE_TRANSFER.md) for end-to-end STDIO and HTTP examples.
+
 ## Logging Configuration
 
 ### Log Levels

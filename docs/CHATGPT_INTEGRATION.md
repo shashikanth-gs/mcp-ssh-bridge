@@ -36,10 +36,18 @@ ChatGPT exchanges code for JWT token
 SSH MCP Bridge
    |
    | 6. Validates JWT
-   | 7. Executes SSH commands
+   | 7. Executes SSH commands or SFTP transfers
    v
 SSH Servers
 ```
+
+For file transfer over HTTP, transfers are server-side:
+
+```text
+ChatGPT or laptop -> HTTPS -> SSH MCP Bridge host -> SFTP -> SSH target host
+```
+
+`local_path` in `upload_file` and `download_file` refers to the filesystem on the SSH MCP Bridge host, not the ChatGPT user's laptop. Use a server-side staging directory for transfer files.
 
 ## Step 1: Deploy SSH MCP Bridge
 
@@ -77,6 +85,14 @@ hosts:
 session:
   idle_timeout: 30
   max_sessions_per_host: 5
+
+security:
+  allowed_local_paths:
+    - "/var/lib/ssh-mcp-bridge/transfers"
+  allowed_remote_write_paths:
+    - "~"
+    - "/tmp"
+  max_file_transfer_mb: 100
 ```
 
 ### Deploy with Docker
@@ -87,11 +103,14 @@ docker run -d \
   -p 8080:8080 \
   -v $(pwd)/config.yaml:/app/config.yaml:ro \
   -v ~/.ssh:/home/mcpuser/.ssh:ro \
+  -v ssh-mcp-transfers:/var/lib/ssh-mcp-bridge/transfers \
   -e AUTH_MODE=oidc \
   -e IDP_ISSUER=https://your-domain.auth0.com/ \
   -e IDP_AUDIENCE=https://ssh-mcp.yourdomain.com \
   shashikanth-gs/mcp-ssh-bridge:latest
 ```
+
+The transfer volume is optional for command-only usage, but recommended for HTTP deployments that need `upload_file` or `download_file`.
 
 ### Set Up HTTPS
 

@@ -4,7 +4,7 @@ Complete installation guide for SSH MCP Bridge with multiple deployment options.
 
 ## Prerequisites
 
-- **Python 3.9+** (Python 3.12+ recommended)
+- **Python 3.10+** (Python 3.12+ recommended)
 - **SSH access** to your servers with key-based authentication
 - **Git** for cloning the repository
 - **Docker** (optional, for container deployment)
@@ -267,7 +267,7 @@ pip install -r requirements.txt
 ### Linux (Ubuntu/Debian)
 
 ```bash
-# Install Python 3.9+
+# Install Python 3.10+
 sudo apt update
 sudo apt install python3 python3-pip python3-venv
 
@@ -282,7 +282,7 @@ pip install -r requirements.txt
 ### Linux (RHEL/CentOS/Fedora)
 
 ```bash
-# Install Python 3.9+
+# Install Python 3.10+
 sudo dnf install python3 python3-pip
 
 # Create virtual environment
@@ -296,7 +296,7 @@ pip install -r requirements.txt
 ### Windows
 
 ```powershell
-# Install Python from python.org (3.9+)
+# Install Python from python.org (3.10+)
 
 # Create virtual environment
 python -m venv .venv

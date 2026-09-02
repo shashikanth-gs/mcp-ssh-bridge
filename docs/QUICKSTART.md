@@ -57,6 +57,15 @@ hosts:
 session:
   idle_timeout: 30
   max_sessions_per_host: 5
+
+security:
+  allowed_local_paths:
+    - "~/Downloads"
+    - "/tmp"
+  allowed_remote_write_paths:
+    - "~"
+    - "/tmp"
+  max_file_transfer_mb: 100
 ```
 
 ## Running the Server
@@ -82,8 +91,11 @@ docker run -d \
   -p 8080:8080 \
   -v $(pwd)/config.yaml:/app/config.yaml:ro \
   -v ~/.ssh:/home/mcpuser/.ssh:ro \
+  -v ssh-mcp-transfers:/var/lib/ssh-mcp-bridge/transfers \
   shashikanth-gs/mcp-ssh-bridge:latest
 ```
+
+The transfer volume is used by HTTP-mode upload/download workflows. In HTTP mode, `local_path` points to this server-side filesystem, not to the laptop connecting to the remote MCP server.
 
 ## Integrating with Claude Desktop
 
@@ -146,9 +158,17 @@ Once configured, you can ask your AI assistant to:
    - "List files in /var/log on my-server"
    - "Show disk usage on all servers"
 
-3. **Multi-server operations**:
+3. **Transfer files**:
+   - "Show the file transfer config"
+   - "Upload /tmp/app.env to my-server:/tmp/app.env"
+   - "Download /var/log/syslog from my-server to /tmp/syslog"
+   - "List /tmp on my-server"
+
+4. **Multi-server operations**:
    - "Check if nginx is running on my-server and postgres is running on db-server"
    - "Deploy my application: create database on db-server, then deploy code on my-server"
+
+In HTTP mode, file transfers are server-side: `local_path` means a path on the machine running `ssh-mcp-bridge`, not on the laptop connecting to it. See [File Transfer Guide](FILE_TRANSFER.md).
 
 ## Common Issues
 
@@ -194,6 +214,7 @@ Once configured, you can ask your AI assistant to:
 
 - Read the [Installation Guide](INSTALLATION.md) for advanced setup
 - Explore [Configuration Reference](CONFIGURATION.md) for all options
+- Review [File Transfer Guide](FILE_TRANSFER.md) before using upload/download over HTTP
 - Set up [OAuth authentication](CHATGPT_INTEGRATION.md) for ChatGPT
 - Review [Security Best Practices](SECURITY.md)
 - Learn about the [Architecture](ARCHITECTURE.md)

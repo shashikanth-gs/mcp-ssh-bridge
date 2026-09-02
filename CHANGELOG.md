@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remote file inspection tools: `stat_remote_path` and `list_remote_directory`.
 - File-transfer policy discovery with `get_file_transfer_config`.
 - REST endpoints for server-side upload, download, remote stat, and remote directory listing in HTTP mode.
+- Dedicated file-transfer guide covering STDIO and HTTP deployment semantics.
+- Release note at `docs/releases/2.1.0.md`.
 - Configurable file-transfer safety policy:
   - `allowed_local_paths`
   - `allowed_remote_write_paths`
@@ -29,8 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation for STDIO versus HTTP file-transfer path semantics.
 
 ### Changed
+- Upgraded runtime dependency support to FastMCP 4.0.1 and MCP SDK 2.1.1.
+- Raised the Python requirement to 3.10+ to match FastMCP 4.
 - The HTTP API and app version are now aligned at `2.1.0`.
 - Config examples include explicit file-transfer policy blocks.
+- README, Quick Start, Docker, and ChatGPT integration docs describe SFTP transfer support.
 
 ### Security
 - Local upload sources and download destinations are restricted to configured server-local paths.
