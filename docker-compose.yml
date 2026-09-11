@@ -22,7 +22,7 @@ services:
       - IDP_AUDIENCE=${IDP_AUDIENCE:-}
       - IDP_JWKS_URI=${IDP_JWKS_URI:-}
       # API Key (used when AUTH_MODE=api_key)
-      - API_KEY=${API_KEY:-your-secure-api-key-here}
+      - API_KEY=${API_KEY:-}
 
     # Mount configuration and SSH keys
     volumes:

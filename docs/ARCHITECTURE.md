@@ -12,7 +12,7 @@ SSH MCP Bridge uses a layered architecture with clear separation of concerns:
 │  Claude Desktop | VS Code | ChatGPT | Custom MCP Clients│
 └──────────────┬──────────────────────────┬────────────────┘
                │                          │
-               v (STDIO)                  v (HTTP/SSE)
+               v (STDIO)             v (Streamable HTTP)
 ┌─────────────────────────────────────────────────────────┐
 │                    API LAYER                            │
 │  ┌──────────────────┐    ┌──────────────────┐          │
@@ -89,7 +89,7 @@ def list_hosts() -> list[dict]:
 #### http_server.py (FastAPI HTTP)
 
 **Responsibilities**:
-- Handle HTTP/SSE transport
+- Handle stateless Streamable HTTP transport
 - Implement REST API endpoints
 - Authentication (API key or OAuth)
 - CORS management
