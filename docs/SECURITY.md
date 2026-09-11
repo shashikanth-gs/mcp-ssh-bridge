@@ -257,6 +257,13 @@ still record exception details in server-side diagnostic logs. Restrict log
 access and retention, and ensure exceptions raised by integrations do not embed
 tokens, credentials, command strings, or command output.
 
+"Unexpected" is deliberate: known, safe-to-show conditions (unknown host, a
+path-policy violation, a dropped SSH connection, a command timeout) are
+re-raised as FastMCP `ToolError`s so the calling agent still gets a useful
+message on `/mcp`, matching what the equivalent REST call already returns as a
+400/404. Only genuinely unexpected exceptions are masked into a generic
+error. See [CONFIGURATION.md](CONFIGURATION.md#error-detail-visibility).
+
 ### Centralized Logging
 
 **Send logs to SIEM**:

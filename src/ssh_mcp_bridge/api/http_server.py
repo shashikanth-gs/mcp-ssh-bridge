@@ -13,6 +13,7 @@ from fastmcp.server.auth.providers.jwt import JWTVerifier, StaticTokenVerifier
 from pydantic import BaseModel
 
 from ssh_mcp_bridge.api.mcp_server import create_mcp_server
+from ssh_mcp_bridge.api.rate_limiter import SlidingWindowRateLimiter
 from ssh_mcp_bridge.models.config import ServerConfig
 from ssh_mcp_bridge.services.mcp_service import McpService
 
@@ -269,33 +270,43 @@ def create_http_server(
         allow_headers=["*"],
     )
 
-    # REST compatibility endpoints validate through the same provider as MCP.
+    # REST compatibility endpoints validate through the same provider as MCP,
+    # and are rate-limited with the same per-client budget FastMCP applies to
+    # /mcp so the REST routes cannot be used to bypass it.
+    rest_rate_limiter = SlidingWindowRateLimiter(max_requests=server_config.rate_limit_per_minute)
+
     async def verify_authentication(
         credentials: Optional[HTTPAuthorizationCredentials] = Security(security),
     ) -> dict:
-        """Verify authentication for REST API endpoints."""
+        """Verify authentication and rate limit for REST API endpoints."""
         if fastmcp_auth is None:
-            return {"auth_type": "none"}
+            result = {"auth_type": "none"}
+        else:
+            if not credentials:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Missing authentication credentials",
+                    headers={"WWW-Authenticate": 'Bearer realm="mcp"'},
+                )
 
-        if not credentials:
-            raise HTTPException(
-                status_code=401,
-                detail="Missing authentication credentials",
-                headers={"WWW-Authenticate": 'Bearer realm="mcp"'},
-            )
+            try:
+                access_token = await fastmcp_auth.verify_token(credentials.credentials)
+            except Exception as error:
+                logger.warning("Bearer token validation failed (%s)", type(error).__name__)
+                access_token = None
+            if access_token is None:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Invalid or expired credentials",
+                    headers={"WWW-Authenticate": 'Bearer realm="mcp"'},
+                )
+            result = {"auth_type": "bearer", "client_id": access_token.client_id}
 
-        try:
-            access_token = await fastmcp_auth.verify_token(credentials.credentials)
-        except Exception as error:
-            logger.warning("Bearer token validation failed (%s)", type(error).__name__)
-            access_token = None
-        if access_token is None:
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid or expired credentials",
-                headers={"WWW-Authenticate": 'Bearer realm="mcp"'},
-            )
-        return {"auth_type": "bearer", "client_id": access_token.client_id}
+        client_id = result.get("client_id", "anonymous")
+        if not rest_rate_limiter.allow(client_id):
+            raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+        return result
 
     @app.get("/")
     async def root():

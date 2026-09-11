@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- HTTP mode's `mask_error_details=True` no longer hides expected, safe-to-show
+  tool errors (unknown host, path-policy violations, dropped SSH connections,
+  command timeouts) behind a generic "Error calling tool" message on `/mcp`.
+  These now surface the same message REST clients already receive; only
+  genuinely unexpected exceptions are still masked.
+- The `/api/v1/*` REST compatibility routes are now rate-limited with the same
+  per-client `rate_limit_per_minute` budget as `/mcp`, closing a gap where an
+  authenticated client could bypass MCP rate limiting entirely by calling the
+  REST API instead.
+
 ### Planned Features
 - Multi-hop SSH (bastion/jump hosts)
 - Resource definitions for server state
