@@ -9,7 +9,7 @@ SSH MCP Bridge implements a defense-in-depth security model:
 1. **Credential Isolation**: AI agents never see actual IPs, passwords, or SSH keys
 2. **Authentication**: API key or OAuth 2.0/OIDC for HTTP access
 3. **Authorization**: Configuration-based access control
-4. **Audit Logging**: Complete command history with user context
+4. **Audit Logging**: Command outcomes without recording raw commands or secrets
 5. **Session Management**: Automatic timeout and cleanup
 6. **Container Security**: Non-root execution, resource limits
 
@@ -102,9 +102,18 @@ python -c "import secrets; print(secrets.token_hex(32))"
 **Configure in server**:
 ```yaml
 server:
+  host: "0.0.0.0"
   enable_http: true
-  api_key: "REPLACE_WITH_GENERATED_KEY"
+  auth_mode: api_key
+  allowed_hosts:
+    - "mcp.example.com"
 ```
+
+Set `API_KEY` through the runtime environment. The bridge passes this key to
+FastMCP's `StaticTokenVerifier`, protecting both `/mcp` and the REST
+compatibility API. FastMCP classifies static tokens as development/internal
+authentication because the token is held in plaintext in process memory. Use
+JWT/JWKS or Auth0 for internet-facing production deployments.
 
 **Rotate keys regularly**:
 - Change API keys every 90 days
@@ -116,10 +125,13 @@ server:
 **Use OAuth for HTTP deployments**:
 ```yaml
 server:
+  auth_mode: oidc
   oauth:
     enabled: true
+    provider: jwt
     issuer: "https://auth.example.com/"
     audience: "https://ssh-mcp.example.com"
+    jwks_uri: "https://auth.example.com/.well-known/jwks.json"
 ```
 
 **Benefits**:
@@ -169,7 +181,17 @@ hosts:
     execution_mode: "shell"  # Stateful, persistent
 ```
 
+HTTP mode blocks shell sessions unless `allow_shared_shell_sessions: true` is
+set. Shell state is global to the bridge process and SSH host, not isolated by
+MCP caller. Prefer `exec` for all remote or multi-user deployments.
+
 ### Network-Level Access Control
+
+HTTP defaults to `127.0.0.1`. A non-loopback bind must configure authentication
+and `allowed_hosts`; FastMCP then enforces bearer authentication and validates
+Host/Origin before requests reach MCP tools. `cors_origins` must name trusted
+browser origins and must not use `*` remotely. Terminate TLS at a trusted reverse
+proxy for every non-loopback deployment.
 
 **Firewall rules**:
 ```bash
@@ -228,6 +250,12 @@ include:
 If command-level audit records are required, collect them in a dedicated,
 access-controlled audit system with documented redaction and retention rules;
 do not enable general application logging of raw commands.
+
+HTTP mode masks unexpected MCP and REST error details from clients. This is a
+response-boundary control, not log redaction: FastMCP or another dependency may
+still record exception details in server-side diagnostic logs. Restrict log
+access and retention, and ensure exceptions raised by integrations do not embed
+tokens, credentials, command strings, or command output.
 
 ### Centralized Logging
 

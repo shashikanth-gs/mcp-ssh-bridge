@@ -54,7 +54,7 @@ An agent can:
 
 | Feature | Description |
 |---------|-------------|
-| **Dual Transport** | STDIO (local) + HTTP/SSE (remote) deployment modes |
+| **Dual Transport** | STDIO (local) + Streamable HTTP (remote) deployment modes |
 | **Security First** | OAuth 2.0/OIDC authentication, credential isolation |
 | **Auditability** | Complete logging of all SSH commands and sessions |
 | **SFTP File Transfer** | Upload/download files with path allowlists, size limits, and SHA-256 metadata |
@@ -128,7 +128,7 @@ docker run -d \
   -v ~/.ssh:/home/mcpuser/.ssh:ro \
   shashikanth-gs/mcp-ssh-bridge:latest
 
-# Access via HTTP/SSE at http://your-server:8080
+# Access via Streamable HTTP at https://your-server/mcp
 ```
 
 ## Configuration
@@ -171,6 +171,15 @@ security:
 ```
 
 See [examples/](examples/) for more configuration options including OAuth setup.
+
+HTTP defaults to loopback and uses stateless Streamable HTTP. Remote binds must
+configure bearer authentication plus an explicit `allowed_hosts` list. Static
+API keys remain available for backward-compatible internal deployments, while
+JWT/JWKS or Auth0 is recommended for production. Persistent `shell` sessions
+are rejected in HTTP mode by default because they are shared process state; use
+`exec`, or explicitly acknowledge a single-principal deployment with
+`allow_shared_shell_sessions: true`. See the
+[configuration guide](docs/CONFIGURATION.md#http-security-and-authentication).
 
 ## Integration Guides
 

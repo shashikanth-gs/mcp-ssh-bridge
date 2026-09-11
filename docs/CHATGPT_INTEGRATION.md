@@ -4,7 +4,7 @@ Complete guide for integrating SSH MCP Bridge with ChatGPT using OAuth 2.0 authe
 
 ## Overview
 
-ChatGPT can connect to SSH MCP Bridge via HTTP/SSE transport using OAuth 2.0 for authentication. This enables ChatGPT to securely manage your infrastructure without exposing credentials.
+ChatGPT can connect to SSH MCP Bridge via Streamable HTTP using OAuth 2.0 for authentication. This enables ChatGPT to securely manage your infrastructure without exposing credentials.
 
 ## Prerequisites
 
@@ -61,12 +61,19 @@ server:
   port: 8080
   enable_http: true
   enable_stdio: false
+  auth_mode: oidc
+  allowed_hosts:
+    - "ssh-mcp.yourdomain.com"
   
   oauth:
     enabled: true
+    provider: auth0
     issuer: "https://your-domain.auth0.com/"
     audience: "https://ssh-mcp.yourdomain.com"
-    jwks_uri: "https://your-domain.auth0.com/.well-known/jwks.json"
+    base_url: "https://ssh-mcp.yourdomain.com"
+    required_scopes:
+      - "openid"
+      - "mcp:execute"
   
   cors_origins:
     - "https://chat.openai.com"
@@ -80,7 +87,7 @@ hosts:
     host: "your-server.com"
     username: "admin"
     private_key_path: "~/.ssh/id_rsa"
-    execution_mode: "shell"
+    execution_mode: "exec"
 
 session:
   idle_timeout: 30
@@ -107,10 +114,20 @@ docker run -d \
   -e AUTH_MODE=oidc \
   -e IDP_ISSUER=https://your-domain.auth0.com/ \
   -e IDP_AUDIENCE=https://ssh-mcp.yourdomain.com \
+  -e AUTH0_CLIENT_ID=your-client-id \
+  -e AUTH0_CLIENT_SECRET=your-client-secret \
+  -e BASE_URL=https://ssh-mcp.yourdomain.com \
+  -e JWT_SIGNING_KEY=replace-with-a-strong-random-signing-key \
   shashikanth-gs/mcp-ssh-bridge:latest
 ```
 
 The transfer volume is optional for command-only usage, but recommended for HTTP deployments that need `upload_file` or `download_file`.
+
+For a multi-instance production deployment, configure the persistent encrypted
+client storage supported by FastMCP's Auth0 provider. Its default in-memory
+storage is appropriate only for one process. Current MCP clients prefer Client
+ID Metadata Documents; Dynamic Client Registration is retained only for
+backward compatibility.
 
 ### Set Up HTTPS
 
