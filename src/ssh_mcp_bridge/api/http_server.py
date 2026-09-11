@@ -8,6 +8,8 @@ from fastapi import FastAPI, HTTPException, Security, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastmcp.server.auth import MultiAuth
+from fastmcp.server.auth.providers.jwt import StaticTokenVerifier
 from pydantic import BaseModel
 
 from ssh_mcp_bridge.models.config import ServerConfig
@@ -86,16 +88,29 @@ def create_fastmcp_auth(server_config: ServerConfig):
     Returns:
         Auth0Provider instance or None if OAuth is disabled
     """
+    api_key_auth = None
+    if server_config.api_key:
+        api_key_auth = StaticTokenVerifier(
+            tokens={
+                server_config.api_key: {
+                    "client_id": "configured-api-key",
+                }
+            }
+        )
+
     if not server_config.oauth or not server_config.oauth.enabled:
-        logger.info("OAuth disabled - no authentication configured")
-        return None
+        if api_key_auth:
+            logger.info("FastMCP API-key authentication configured")
+        else:
+            logger.info("OAuth disabled - no authentication configured")
+        return api_key_auth
 
     oauth = server_config.oauth
 
     # Validate required OAuth settings
     if not oauth.issuer or not oauth.audience:
         logger.warning("OAuth enabled but issuer or audience not configured")
-        return None
+        return api_key_auth
 
     # Get client credentials from environment or config
     client_id = os.environ.get("AUTH0_CLIENT_ID") or getattr(oauth, "client_id", None)
@@ -104,7 +119,7 @@ def create_fastmcp_auth(server_config: ServerConfig):
     if not client_id or not client_secret:
         logger.warning("OAuth enabled but client_id or client_secret not configured")
         logger.info("Set AUTH0_CLIENT_ID and AUTH0_CLIENT_SECRET environment variables")
-        return None
+        return api_key_auth
 
     try:
         from fastmcp.server.auth.providers.auth0 import Auth0Provider
@@ -139,15 +154,17 @@ def create_fastmcp_auth(server_config: ServerConfig):
         logger.info(f"  Audience: {oauth.audience}")
         logger.info(f"  Base URL: {base_url}")
 
+        if api_key_auth:
+            return MultiAuth(server=auth, verifiers=[api_key_auth])
         return auth
 
     except ImportError as e:
         logger.error(f"Failed to import Auth0Provider: {e}")
         logger.error("Make sure fastmcp >= 2.13.0 is installed")
-        return None
+        return api_key_auth
     except Exception as e:
         logger.error(f"Failed to create Auth0Provider: {e}")
-        return None
+        return api_key_auth
 
 
 def create_http_server(
