@@ -10,8 +10,9 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List
 
-from ssh_mcp_bridge.models.config import Config
 from ssh_mcp_bridge.core.ssh_session import SshSession
+from ssh_mcp_bridge.models.config import Config
+from ssh_mcp_bridge.models.results import CommandResult
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class SshSessionManager:
         """List all configured hosts."""
         return [{"name": host.name, "description": host.description} for host in self.config.hosts]
 
-    def execute_command(self, host_name: str, command: str) -> Dict[str, Any]:
+    def execute_command(self, host_name: str, command: str) -> CommandResult:
         """Execute command on host."""
         host_config = self.config.get_host(host_name)
         if not host_config:

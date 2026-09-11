@@ -1,12 +1,15 @@
 """SSH session management."""
 
 import logging
+import re
 import socket
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import paramiko
+
+from ssh_mcp_bridge.models.results import CommandResult
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +143,7 @@ class SshSession:
         self.last_access = time.time()
         logger.info(f"Connected to {self.host_config.name}")
 
-    def execute_command(self, command: str) -> Dict[str, Any]:
+    def execute_command(self, command: str) -> CommandResult:
         """Execute command on SSH session."""
         if not self.connected:
             self.connect()
@@ -152,8 +155,12 @@ class SshSession:
                 return self._execute_exec_mode(command)
             else:
                 return self._execute_shell_mode(command)
-        except Exception as e:
-            logger.error(f"Command execution failed: {e}")
+        except Exception as error:
+            logger.error(
+                "Command execution failed on %s (%s)",
+                self.host_config.name,
+                type(error).__name__,
+            )
             self.close()
             raise
 
@@ -182,10 +189,10 @@ class SshSession:
         env_prefix = " ".join([f"{k}='{v}'" for k, v in PAGER_DISABLE_ENV.items()])
         return f"export {env_prefix}; {command}"
 
-    def _execute_exec_mode(self, command: str) -> Dict[str, Any]:
+    def _execute_exec_mode(self, command: str) -> CommandResult:
         """Execute command in exec mode (stateless)."""
         processed_command = self._preprocess_command(command)
-        logger.debug(f"[{self.host_config.name}] $ {command}")
+        logger.debug("Executing command on %s (length=%d)", self.host_config.name, len(command))
 
         start_time = time.time()
         stdin, stdout, stderr = self.client.exec_command(processed_command, timeout=60)
@@ -202,27 +209,26 @@ class SshSession:
         success = exit_status == 0
         status_icon = "✓" if success else "✗"
         logger.info(
-            f"[{self.host_config.name}] {status_icon} {command[:60]}{'...' if len(command) > 60 else ''} ({execution_time:.2f}s)"
+            "[%s] %s command completed with exit status %d (%.2fs)",
+            self.host_config.name,
+            status_icon,
+            exit_status,
+            execution_time,
         )
 
-        result = {
-            "host": self.host_config.name,
-            "command": command,
-            "output": output.strip(),
-            "success": success,
-        }
+        return CommandResult(
+            host=self.host_config.name,
+            output=output.strip(),
+            success=success,
+            exit_status=exit_status,
+        )
 
-        if not success:
-            result["exit_status"] = exit_status
-
-        return result
-
-    def _execute_shell_mode(self, command: str) -> Dict[str, Any]:
+    def _execute_shell_mode(self, command: str) -> CommandResult:
         """Execute command in shell mode (stateful)."""
         if not self.shell_channel:
             raise RuntimeError("Shell channel not available")
 
-        logger.debug(f"[{self.host_config.name}] $ {command}")
+        logger.debug("Executing command on %s (length=%d)", self.host_config.name, len(command))
         start_time = time.time()
 
         start_marker = f"__START_{uuid.uuid4().hex}__"
@@ -234,15 +240,21 @@ class SshSession:
             time.sleep(0.05)
 
         processed_command = self._preprocess_command(command)
-        full_command = f"echo '{start_marker}'; {processed_command}; echo '{end_marker}'\n"
+        full_command = (
+            f"printf '%s\\n' '{start_marker}'\n"
+            f"{processed_command}\n"
+            "__ssh_mcp_exit_status=$?\n"
+            f"printf '\\n%s:%s\\n' '{end_marker}' \"$__ssh_mcp_exit_status\"\n"
+            "unset __ssh_mcp_exit_status\n"
+        )
         self.shell_channel.send(full_command)
 
         # Collect output
         output = ""
         timeout = 60
-        marker_found = False
         consecutive_empty_reads = 0
         max_empty_reads = 20
+        end_marker_pattern = re.compile(rf"{re.escape(end_marker)}:(\d+)")
 
         while True:
             if time.time() - start_time > timeout:
@@ -254,32 +266,33 @@ class SshSession:
                     if chunk:
                         output += chunk
                         consecutive_empty_reads = 0
-                        if end_marker in output:
-                            marker_found = True
+                        if end_marker_pattern.search(output):
                             break
                     else:
                         consecutive_empty_reads += 1
                 else:
                     consecutive_empty_reads += 1
 
-                if consecutive_empty_reads >= max_empty_reads and end_marker in output:
-                    marker_found = True
+                if consecutive_empty_reads >= max_empty_reads and end_marker_pattern.search(output):
                     break
 
                 time.sleep(0.1)
             except socket.timeout:
                 consecutive_empty_reads += 1
-                if consecutive_empty_reads >= max_empty_reads and end_marker in output:
-                    marker_found = True
+                if consecutive_empty_reads >= max_empty_reads and end_marker_pattern.search(output):
                     break
 
-        # Extract content between markers
-        if start_marker in output and end_marker in output:
+        status_match = end_marker_pattern.search(output)
+        if not status_match:
+            raise RuntimeError("Shell command completed without an exit-status marker")
+        exit_status = int(status_match.group(1))
+
+        # Extract content between markers.
+        if start_marker in output:
             start_idx = output.find(start_marker) + len(start_marker)
-            end_idx = output.find(end_marker)
-            output = output[start_idx:end_idx]
-        elif end_marker in output:
-            output = output.split(end_marker)[0]
+            output = output[start_idx : status_match.start()]
+        else:
+            output = output[: status_match.start()]
 
         # Clean up output
         lines = output.split("\n")
@@ -298,22 +311,28 @@ class SshSession:
 
         output = "\n".join(cleaned_lines)
         execution_time = time.time() - start_time
+        success = exit_status == 0
+        status_icon = "✓" if success else "✗"
 
         logger.info(
-            f"[{self.host_config.name}] ✓ {command[:60]}{'...' if len(command) > 60 else ''} ({execution_time:.2f}s)"
+            "[%s] %s command completed with exit status %d (%.2fs)",
+            self.host_config.name,
+            status_icon,
+            exit_status,
+            execution_time,
         )
 
-        return {
-            "host": self.host_config.name,
-            "command": command,
-            "output": output,
-            "success": True,
-        }
+        return CommandResult(
+            host=self.host_config.name,
+            output=output,
+            success=success,
+            exit_status=exit_status,
+        )
 
     def get_working_directory(self) -> str:
         """Get current working directory."""
         result = self.execute_command("pwd")
-        return result["output"].strip()
+        return result.output.strip()
 
     def close(self):
         """Close SSH connection."""

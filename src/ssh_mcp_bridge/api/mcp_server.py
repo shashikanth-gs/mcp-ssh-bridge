@@ -7,6 +7,7 @@ from fastmcp import FastMCP
 from fastmcp.server.dependencies import get_access_token
 from fastmcp.server.middleware.rate_limiting import SlidingWindowRateLimitingMiddleware
 
+from ssh_mcp_bridge.models.results import CommandResult
 from ssh_mcp_bridge.services.mcp_service import McpService
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,7 @@ def create_mcp_server(
         return service.list_hosts()
 
     @mcp.tool()
-    def execute_command(host: str, command: str) -> dict:
+    def execute_command(host: str, command: str) -> CommandResult:
         """Execute a command on a specific SSH host.
 
         Sessions are maintained, so environment variables and working directory
@@ -69,12 +70,11 @@ def create_mcp_server(
             command: Command to execute
 
         Returns:
-            Dictionary containing:
+            CommandResult containing:
                 - host: Host name
-                - command: Executed command
                 - output: Command output
                 - success: Whether command succeeded
-                - exit_status: Exit status code (if failed)
+                - exit_status: Exit status code
         """
         return service.execute_command(host, command)
 

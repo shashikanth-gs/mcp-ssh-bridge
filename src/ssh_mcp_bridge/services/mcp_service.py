@@ -4,6 +4,7 @@ import logging
 from typing import Any, Dict, List
 
 from ssh_mcp_bridge.core.session_manager import SshSessionManager
+from ssh_mcp_bridge.models.results import CommandResult
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class McpService:
         logger.debug("Listing all configured hosts")
         return self.session_manager.list_hosts()
 
-    def execute_command(self, host: str, command: str) -> Dict[str, Any]:
+    def execute_command(self, host: str, command: str) -> CommandResult:
         """Execute command on specified host.
 
         Args:
@@ -41,7 +42,7 @@ class McpService:
         Raises:
             ValueError: If host not found
         """
-        logger.info(f"Executing command on {host}: {command[:50]}...")
+        logger.info("Executing command on %s (length=%d)", host, len(command))
         return self.session_manager.execute_command(host, command)
 
     def get_working_directory(self, host: str) -> Dict[str, str]:
