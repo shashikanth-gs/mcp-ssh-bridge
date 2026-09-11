@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   ssh-mcp-bridge:
     build:
@@ -11,7 +9,8 @@ services:
 
     # Load environment variables from .env file
     env_file:
-      - .env
+      - path: .env
+        required: false
 
     # Environment variables
     environment:
@@ -22,7 +21,8 @@ services:
       - IDP_AUDIENCE=${IDP_AUDIENCE:-}
       - IDP_JWKS_URI=${IDP_JWKS_URI:-}
       # API Key (used when AUTH_MODE=api_key)
-      - API_KEY=${API_KEY:-your-secure-api-key-here}
+      # Startup fails closed when this is empty; set API_KEY in .env or the shell.
+      - API_KEY=${API_KEY:-}
 
     # Mount configuration and SSH keys
     volumes:

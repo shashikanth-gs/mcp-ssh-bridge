@@ -13,9 +13,12 @@ class OAuthConfig:
     """OAuth/OIDC configuration."""
 
     enabled: bool = False
+    provider: str = "jwt"
     issuer: Optional[str] = None
     audience: Optional[str] = None
     jwks_uri: Optional[str] = None
+    base_url: Optional[str] = None
+    required_scopes: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         """Load from environment variables if not set."""
@@ -23,35 +26,53 @@ class OAuthConfig:
             self.issuer = self.issuer or os.getenv("IDP_ISSUER")
             self.audience = self.audience or os.getenv("IDP_AUDIENCE")
             self.jwks_uri = self.jwks_uri or os.getenv("IDP_JWKS_URI")
+            self.base_url = self.base_url or os.getenv("BASE_URL")
+
+        self.provider = self.provider.lower()
+        if self.provider not in {"jwt", "auth0"}:
+            raise ValueError("oauth.provider must be 'jwt' or 'auth0'")
 
 
 @dataclass
 class ServerConfig:
     """Server configuration."""
 
-    host: str = "0.0.0.0"
+    host: str = "127.0.0.1"
     port: int = 8080
     enable_http: bool = False
     enable_stdio: bool = True
+    auth_mode: str = "auto"
     api_key: Optional[str] = None
-    cors_origins: List[str] = field(default_factory=lambda: ["*"])
+    allowed_hosts: List[str] = field(default_factory=list)
+    cors_origins: List[str] = field(default_factory=list)
+    allow_unauthenticated_http: bool = False
+    allow_shared_shell_sessions: bool = False
+    rate_limit_per_minute: int = 60
     log_level: str = "INFO"
     oauth: Optional[OAuthConfig] = None
 
     def __post_init__(self):
         """Handle backward compatibility and environment variables."""
+        self.auth_mode = os.getenv("AUTH_MODE", self.auth_mode).lower()
+        if self.auth_mode == "oauth":
+            self.auth_mode = "oidc"
+        if self.auth_mode not in {"auto", "none", "api_key", "oidc"}:
+            raise ValueError("auth_mode must be auto, none, api_key, or oidc")
+
         # Load API key from environment if not set
         if not self.api_key:
-            self.api_key = os.getenv("API_KEY")
+            self.api_key = os.getenv("API_KEY") or os.getenv("SSH_MCP_API_KEY")
 
         # Initialize OAuth config if not set
         if self.oauth is None:
             # Check if AUTH_MODE is set to oidc in environment
-            auth_mode = os.getenv("AUTH_MODE", "api_key").lower()
-            if auth_mode == "oidc":
+            if self.auth_mode == "oidc":
                 self.oauth = OAuthConfig(enabled=True)
             else:
                 self.oauth = OAuthConfig(enabled=False)
+
+        if self.rate_limit_per_minute < 1:
+            raise ValueError("rate_limit_per_minute must be greater than 0")
 
 
 @dataclass

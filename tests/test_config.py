@@ -5,7 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from ssh_mcp_bridge.models.config import HostConfig, SecurityConfig, SessionConfig, load_config
+from ssh_mcp_bridge.models.config import (
+    HostConfig,
+    OAuthConfig,
+    SecurityConfig,
+    ServerConfig,
+    SessionConfig,
+    load_config,
+)
 
 
 def test_host_config_creation():
@@ -107,3 +114,76 @@ def test_security_config_rejects_invalid_size_limit():
     """Test file-transfer size limit validation."""
     with pytest.raises(ValueError, match="max_file_transfer_mb"):
         SecurityConfig(max_file_transfer_mb=0)
+
+
+def test_server_config_reads_auth_environment_and_legacy_alias(monkeypatch):
+    monkeypatch.setenv("AUTH_MODE", "oauth")
+    monkeypatch.setenv("SSH_MCP_API_KEY", "environment-key")
+    monkeypatch.delenv("API_KEY", raising=False)
+
+    server = ServerConfig()
+
+    assert server.auth_mode == "oidc"
+    assert server.api_key == "environment-key"
+    assert server.oauth.enabled is True
+
+
+@pytest.mark.parametrize("auth_mode", ["basic", "jwt", "disabled"])
+def test_server_config_rejects_unknown_auth_mode(monkeypatch, auth_mode):
+    monkeypatch.delenv("AUTH_MODE", raising=False)
+
+    with pytest.raises(ValueError, match="auth_mode"):
+        ServerConfig(auth_mode=auth_mode)
+
+
+def test_server_config_rejects_invalid_rate_limit(monkeypatch):
+    monkeypatch.delenv("AUTH_MODE", raising=False)
+
+    with pytest.raises(ValueError, match="rate_limit_per_minute"):
+        ServerConfig(rate_limit_per_minute=0)
+
+
+def test_oauth_config_rejects_unknown_provider():
+    with pytest.raises(ValueError, match="oauth.provider"):
+        OAuthConfig(provider="custom")
+
+
+def test_load_config_parses_http_security_and_oauth_fields(tmp_path, monkeypatch):
+    monkeypatch.delenv("AUTH_MODE", raising=False)
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text("""
+server:
+  host: 0.0.0.0
+  enable_http: true
+  enable_stdio: false
+  auth_mode: oidc
+  allowed_hosts: [mcp.example.com]
+  cors_origins: [https://trusted.example]
+  rate_limit_per_minute: 25
+  oauth:
+    enabled: true
+    provider: jwt
+    issuer: https://identity.example/
+    audience: ssh-api
+    jwks_uri: https://identity.example/jwks
+    base_url: https://mcp.example.com
+    required_scopes: [mcp:execute]
+hosts: []
+""")
+
+    config = load_config(config_path)
+
+    assert config.server.host == "0.0.0.0"
+    assert config.server.auth_mode == "oidc"
+    assert config.server.allowed_hosts == ["mcp.example.com"]
+    assert config.server.cors_origins == ["https://trusted.example"]
+    assert config.server.rate_limit_per_minute == 25
+    assert config.server.oauth == OAuthConfig(
+        enabled=True,
+        provider="jwt",
+        issuer="https://identity.example/",
+        audience="ssh-api",
+        jwks_uri="https://identity.example/jwks",
+        base_url="https://mcp.example.com",
+        required_scopes=["mcp:execute"],
+    )

@@ -4,6 +4,8 @@ import logging
 from typing import Optional
 
 from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_access_token
+from fastmcp.server.middleware.rate_limiting import SlidingWindowRateLimitingMiddleware
 
 from ssh_mcp_bridge.models.results import CommandResult
 from ssh_mcp_bridge.services.mcp_service import McpService
@@ -11,7 +13,14 @@ from ssh_mcp_bridge.services.mcp_service import McpService
 logger = logging.getLogger(__name__)
 
 
-def create_mcp_server(service: McpService, name: str = "SSH Bridge", auth=None) -> FastMCP:
+def create_mcp_server(
+    service: McpService,
+    name: str = "SSH Bridge",
+    auth=None,
+    *,
+    mask_error_details: bool = False,
+    rate_limit_per_minute: int | None = None,
+) -> FastMCP:
     """Create and configure FastMCP server.
 
     Args:
@@ -22,7 +31,20 @@ def create_mcp_server(service: McpService, name: str = "SSH Bridge", auth=None) 
     Returns:
         Configured FastMCP server
     """
-    mcp = FastMCP(name, auth=auth)
+    mcp = FastMCP(name, auth=auth, mask_error_details=mask_error_details)
+
+    if rate_limit_per_minute is not None:
+
+        def rate_limit_identity(_context) -> str:
+            token = get_access_token()
+            return token.client_id if token else "anonymous"
+
+        mcp.add_middleware(
+            SlidingWindowRateLimitingMiddleware(
+                max_requests=rate_limit_per_minute,
+                get_client_id=rate_limit_identity,
+            )
+        )
 
     @mcp.tool()
     def list_hosts() -> list[dict]:
