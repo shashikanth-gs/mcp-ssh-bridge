@@ -1,6 +1,6 @@
 """SSH MCP Bridge - Enterprise SSH gateway for AI assistants."""
 
-__version__ = "2.0.0"
+__version__ = "2.2.0"
 __author__ = "SSH MCP Bridge Team"
 __description__ = "FastMCP-based SSH Bridge for Model Context Protocol with enterprise features"
 
