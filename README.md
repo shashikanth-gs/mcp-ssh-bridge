@@ -228,6 +228,12 @@ Agents can use these tools to interact with your servers:
 - **`close_session(host)`** - Close SSH session
 - **`get_session_stats()`** - View active sessions and statistics
 
+`execute_command` returns `host`, `output`, `success`, and `exit_status`. It
+does not echo the submitted command, because the command is already present in
+the tool-call arguments and may contain sensitive data. MCP clients may still
+receive the compact result in both `structuredContent` and a JSON `content`
+block; that duplication is FastMCP/MCP backward-compatibility behavior.
+
 File transfers are bidirectional but server-side. In STDIO mode, `local_path`
 is on the same machine running Codex, Claude, or another MCP client. In HTTP
 mode, `local_path` is on the remote machine running `ssh-mcp-bridge`, not on
