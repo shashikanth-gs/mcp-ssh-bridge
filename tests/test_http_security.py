@@ -517,6 +517,67 @@ def test_rate_limit_is_applied_per_authenticated_client():
     assert "configured-api-key" in second.text
 
 
+def test_rest_rate_limit_is_applied_per_authenticated_client():
+    app = create_http_server(
+        FakeService(),
+        ServerConfig(
+            auth_mode="api_key",
+            api_key="test-secret",
+            rate_limit_per_minute=1,
+        ),
+    )
+    auth = {"Authorization": "Bearer test-secret"}
+
+    with TestClient(app) as client:
+        first = client.get("/api/v1/hosts", headers=auth)
+        second = client.get("/api/v1/hosts", headers=auth)
+
+    assert first.status_code == 200
+    assert second.status_code == 429
+    assert second.json() == {"detail": "Rate limit exceeded"}
+
+
+def test_rest_rate_limit_applies_to_anonymous_clients():
+    app = create_http_server(
+        FakeService(),
+        ServerConfig(auth_mode="none", rate_limit_per_minute=1),
+    )
+
+    with TestClient(app) as client:
+        first = client.get("/api/v1/hosts")
+        second = client.get("/api/v1/hosts")
+
+    assert first.status_code == 200
+    assert second.status_code == 429
+
+
+def test_mcp_preserves_expected_error_details_for_the_client():
+    class FailingService(FakeService):
+        def execute_command(self, host, command):
+            raise ValueError(f"Host not found: {host}")
+
+    app = create_http_server(
+        FailingService(),
+        ServerConfig(auth_mode="api_key", api_key="test-secret"),
+    )
+    request = mcp_tools_list_request()
+    request.update(
+        {
+            "method": "tools/call",
+            "params": {
+                "name": "execute_command",
+                "arguments": {"host": "typo-host", "command": "uptime"},
+            },
+        }
+    )
+
+    with TestClient(app) as client:
+        response = client.post("/mcp", headers=mcp_headers(), json=request)
+
+    assert response.status_code == 200
+    assert "Host not found: typo-host" in response.text
+
+
 def test_mcp_masks_unexpected_tool_error_details_from_client():
     class FailingService(FakeService):
         def execute_command(self, host, command):

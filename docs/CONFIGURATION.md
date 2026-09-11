@@ -51,7 +51,7 @@ server:
 | `cors_origins` | list | `[]` | Browser origins allowed by CORS and the MCP origin guard |
 | `allow_unauthenticated_http` | boolean | `false` | Explicitly acknowledge an unauthenticated non-loopback bind |
 | `allow_shared_shell_sessions` | boolean | `false` | Explicitly allow process-global shell state in HTTP mode |
-| `rate_limit_per_minute` | integer | `60` | Per-authenticated-client MCP request limit |
+| `rate_limit_per_minute` | integer | `60` | Per-authenticated-client request limit, applied separately to `/mcp` and to the `/api/v1` REST routes |
 | `log_level` | string | `"INFO"` | Logging level: DEBUG, INFO, WARN, ERROR |
 
 ## HTTP Security and Authentication
@@ -65,6 +65,40 @@ HTTP mode fails closed:
 - Non-loopback binds require `allowed_hosts`; wildcard hosts are rejected.
 - Persistent shell sessions are rejected by default because they are shared
   application state rather than isolated by MCP client.
+
+### Rate Limiting
+
+`rate_limit_per_minute` caps requests per authenticated client identity (the
+bearer token's `client_id`, or `"anonymous"` when auth is disabled). It is
+enforced on both surfaces so the REST routes cannot be used to bypass the
+limit that applies to `/mcp`:
+
+- `/mcp` is limited by FastMCP's own `SlidingWindowRateLimitingMiddleware`.
+- The `/api/v1/*` REST routes are limited by a separate, bridge-owned sliding
+  window (`ssh_mcp_bridge.api.rate_limiter.SlidingWindowRateLimiter`) applied
+  in the same `verify_authentication` dependency that checks the bearer token.
+
+These are two independent counters with the same per-minute budget, not one
+shared counter — a client's REST and MCP calls are not deducted from a single
+combined total. A client that is rate-limited on `/mcp` can still make REST
+calls (and vice versa) up to its own separate budget.
+
+### Error Detail Visibility
+
+HTTP mode sets FastMCP's `mask_error_details=True`, so an unexpected exception
+inside a tool call is replaced with a generic `"Error calling tool '<name>'"`
+message rather than reaching the client. Without further care this would also
+hide ordinary, expected conditions — an unknown host, a path-policy
+violation, a dropped SSH connection, a shell command timeout — that carry a
+safe, actionable message and that REST clients already see as a normal 400/404
+response.
+
+To keep `/mcp` and the REST routes consistent, each MCP tool re-raises
+`ValueError`, `FileNotFoundError`, `TimeoutError`, and `SshConnectionError` as
+FastMCP's `ToolError`, which FastMCP always delivers to the client even when
+`mask_error_details=True`. Only genuinely unexpected exceptions (a bug, a
+dependency failure) are still masked. Command text and other sensitive
+argument data are never included in either case.
 
 ### API Key Authentication (Compatibility/Internal Use)
 

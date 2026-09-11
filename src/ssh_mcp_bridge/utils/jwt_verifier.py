@@ -1,11 +1,12 @@
 """JWT token verification for Auth0."""
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 import httpx
 import jwt
-from jwt import PyJWKClient
 from fastapi import HTTPException, status
+from jwt import PyJWKClient
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +29,13 @@ class JWTVerifier:
         """
         self.issuer = issuer.rstrip("/") + "/"
         self.audience = audience
-        
+
         # Set JWKS URI
         if jwks_uri:
             self.jwks_uri = jwks_uri
         else:
             self.jwks_uri = f"{self.issuer}.well-known/jwks.json"
-        
+
         self.jwks_client = PyJWKClient(self.jwks_uri)
         logger.info(f"JWT Verifier initialized - Issuer: {self.issuer}, Audience: {self.audience}")
 
@@ -53,7 +54,7 @@ class JWTVerifier:
         try:
             # Get signing key from JWKS
             signing_key = self.jwks_client.get_signing_key_from_jwt(token)
-            
+
             # Decode and verify token
             payload = jwt.decode(
                 token,
@@ -62,44 +63,54 @@ class JWTVerifier:
                 audience=self.audience,
                 issuer=self.issuer,
             )
-            
+
             logger.debug(f"Token verified for user: {payload.get('sub')}")
             return payload
-            
+
         except jwt.ExpiredSignatureError:
             logger.warning("Token has expired")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has expired",
-                headers={"WWW-Authenticate": 'Bearer error="invalid_token", error_description="The access token expired"'},
+                headers={
+                    "WWW-Authenticate": 'Bearer error="invalid_token", error_description="The access token expired"'
+                },
             )
         except jwt.InvalidAudienceError:
             logger.warning(f"Invalid audience in token. Expected: {self.audience}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token audience",
-                headers={"WWW-Authenticate": 'Bearer error="invalid_token", error_description="Invalid audience"'},
+                headers={
+                    "WWW-Authenticate": 'Bearer error="invalid_token", error_description="Invalid audience"'
+                },
             )
         except jwt.InvalidIssuerError:
             logger.warning(f"Invalid issuer in token. Expected: {self.issuer}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token issuer",
-                headers={"WWW-Authenticate": 'Bearer error="invalid_token", error_description="Invalid issuer"'},
+                headers={
+                    "WWW-Authenticate": 'Bearer error="invalid_token", error_description="Invalid issuer"'
+                },
             )
         except jwt.InvalidTokenError as e:
             logger.warning(f"Invalid token: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token",
-                headers={"WWW-Authenticate": 'Bearer error="invalid_token", error_description="Invalid token"'},
+                headers={
+                    "WWW-Authenticate": 'Bearer error="invalid_token", error_description="Invalid token"'
+                },
             )
         except Exception as e:
             logger.error(f"Error verifying token: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token verification failed",
-                headers={"WWW-Authenticate": 'Bearer error="invalid_token", error_description="Token verification failed"'},
+                headers={
+                    "WWW-Authenticate": 'Bearer error="invalid_token", error_description="Token verification failed"'
+                },
             )
 
     def get_user_info(self, claims: Dict[str, Any]) -> Dict[str, str]:
@@ -113,7 +124,7 @@ class JWTVerifier:
         """
         # Extract custom claims (namespaced)
         namespace = self.audience
-        
+
         return {
             "user_id": claims.get(f"{namespace}/user_id", claims.get("sub")),
             "email": claims.get(f"{namespace}/email", claims.get("email", "")),

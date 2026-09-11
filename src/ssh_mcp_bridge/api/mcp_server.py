@@ -1,16 +1,40 @@
 """FastMCP server implementation."""
 
+import functools
 import logging
 from typing import Optional
 
 from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
 from fastmcp.server.dependencies import get_access_token
 from fastmcp.server.middleware.rate_limiting import SlidingWindowRateLimitingMiddleware
 
+from ssh_mcp_bridge.core.ssh_session import SshConnectionError
 from ssh_mcp_bridge.models.results import CommandResult
 from ssh_mcp_bridge.services.mcp_service import McpService
 
 logger = logging.getLogger(__name__)
+
+# Exceptions the service layer raises for ordinary, expected conditions
+# (unknown host, path-policy violations, connection/timeout failures) rather
+# than genuine internal errors. Their messages are safe to show the calling
+# agent, so they are re-raised as ToolError, which FastMCP always passes
+# through to the client even when mask_error_details=True. Anything else
+# still goes through FastMCP's normal masking in HTTP mode.
+_EXPECTED_TOOL_ERRORS = (ValueError, FileNotFoundError, TimeoutError, SshConnectionError)
+
+
+def _visible_errors(func):
+    """Preserve expected-error messages through FastMCP's error masking."""
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except _EXPECTED_TOOL_ERRORS as error:
+            raise ToolError(str(error)) from error
+
+    return wrapper
 
 
 def create_mcp_server(
@@ -47,6 +71,7 @@ def create_mcp_server(
         )
 
     @mcp.tool()
+    @_visible_errors
     def list_hosts() -> list[dict]:
         """List all available SSH hosts.
 
@@ -59,6 +84,7 @@ def create_mcp_server(
         return service.list_hosts()
 
     @mcp.tool()
+    @_visible_errors
     def execute_command(host: str, command: str) -> CommandResult:
         """Execute a command on a specific SSH host.
 
@@ -79,6 +105,7 @@ def create_mcp_server(
         return service.execute_command(host, command)
 
     @mcp.tool()
+    @_visible_errors
     def get_working_directory(host: str) -> dict:
         """Get the current working directory for a host's session.
 
@@ -93,6 +120,7 @@ def create_mcp_server(
         return service.get_working_directory(host)
 
     @mcp.tool()
+    @_visible_errors
     def get_file_transfer_config() -> dict:
         """Get file-transfer limits and path policy.
 
@@ -111,6 +139,7 @@ def create_mcp_server(
         return service.get_file_transfer_config()
 
     @mcp.tool()
+    @_visible_errors
     def stat_remote_path(host: str, remote_path: str) -> dict:
         """Get metadata for a file or directory on a remote SSH host.
 
@@ -124,6 +153,7 @@ def create_mcp_server(
         return service.stat_remote_path(host, remote_path)
 
     @mcp.tool()
+    @_visible_errors
     def list_remote_directory(host: str, remote_path: str, limit: int = 200) -> dict:
         """List a directory on a remote SSH host.
 
@@ -138,6 +168,7 @@ def create_mcp_server(
         return service.list_remote_directory(host, remote_path, limit)
 
     @mcp.tool()
+    @_visible_errors
     def download_file(
         host: str,
         remote_path: str,
@@ -162,6 +193,7 @@ def create_mcp_server(
         return service.download_file(host, remote_path, local_path, overwrite)
 
     @mcp.tool()
+    @_visible_errors
     def upload_file(
         host: str,
         local_path: str,
@@ -187,6 +219,7 @@ def create_mcp_server(
         return service.upload_file(host, local_path, remote_path, overwrite)
 
     @mcp.tool()
+    @_visible_errors
     def close_session(host: str) -> dict:
         """Close the SSH session for a specific host.
 
@@ -204,6 +237,7 @@ def create_mcp_server(
         return service.close_session(host)
 
     @mcp.tool()
+    @_visible_errors
     def get_session_stats() -> dict:
         """Get statistics about active SSH sessions.
 
