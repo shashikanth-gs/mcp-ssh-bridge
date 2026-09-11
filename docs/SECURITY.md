@@ -208,20 +208,26 @@ server:
   log_level: "INFO"  # INFO for production, DEBUG for troubleshooting
 ```
 
-**Log command execution**:
-All commands are automatically logged with:
+**Log command execution metadata**:
+Command execution logs intentionally contain metadata rather than command text
+or output. Commands frequently contain credentials, tokens, or inline scripts,
+and copying them into logs creates a second secret-retention surface. Logs
+include:
 - Timestamp
-- User identity (from JWT or API key)
-- Target host
-- Command executed
+- Target host alias
+- Command length
 - Exit status
-- Output (configurable)
+- Execution duration
 
 **Example log entry**:
 ```
-2025-12-31 14:23:45 INFO [user@example.com] web-server: uptime
-2025-12-31 14:23:45 INFO [user@example.com] web-server: SUCCESS (exit 0)
+2026-09-12 14:23:45 INFO Executing command on web-server (length=6)
+2026-09-12 14:23:45 INFO [web-server] ✓ command completed with exit status 0 (0.18s)
 ```
+
+If command-level audit records are required, collect them in a dedicated,
+access-controlled audit system with documented redaction and retention rules;
+do not enable general application logging of raw commands.
 
 ### Centralized Logging
 
@@ -244,17 +250,10 @@ docker run \
 
 **Monitor for suspicious activity**:
 - Failed authentication attempts
-- Commands executed as root
-- Access to production systems
-- High-privilege operations (rm, chmod, etc.)
+- Repeated nonzero command exits
+- Unexpected access to production host aliases
+- Unusual request or session volume
 - After-hours access
-
-**Set up alerts**:
-```bash
-# Example: Alert on suspicious commands
-grep -i "rm -rf\|sudo su\|passwd" /var/log/ssh-mcp-bridge.log \
-  | mail -s "Suspicious SSH MCP Activity" security@example.com
-```
 
 ## Network Security
 
