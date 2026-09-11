@@ -7,23 +7,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-- HTTP mode's `mask_error_details=True` no longer hides expected, safe-to-show
-  tool errors (unknown host, path-policy violations, dropped SSH connections,
-  command timeouts) behind a generic "Error calling tool" message on `/mcp`.
-  These now surface the same message REST clients already receive; only
-  genuinely unexpected exceptions are still masked.
-- The `/api/v1/*` REST compatibility routes are now rate-limited with the same
-  per-client `rate_limit_per_minute` budget as `/mcp`, closing a gap where an
-  authenticated client could bypass MCP rate limiting entirely by calling the
-  REST API instead.
-
 ### Planned Features
 - Multi-hop SSH (bastion/jump hosts)
 - Resource definitions for server state
 - Prompt templates for common operations
 - WebSocket support for real-time streaming
 - Prometheus metrics export
+
+## [2.2.0] - 2026-09-11
+
+### Security
+- Protect both the MCP endpoint and the REST compatibility routes with one
+  framework-native authentication policy instead of two divergent checks.
+  Configured API keys previously protected only the REST routes; `/mcp` could
+  be reached without authentication whenever OAuth was not configured.
+- Add `StaticTokenVerifier` (API key), `JWTVerifier`/`RemoteAuthProvider`
+  (JWT/JWKS with RFC 9728 protected-resource metadata), `Auth0Provider`
+  (interactive OAuth), and `MultiAuth` (mixed-mode migration) via explicit
+  `auth_mode: auto|none|api_key|oidc`. Invalid explicit configuration now
+  fails startup instead of silently exposing an anonymous service.
+- Change the default HTTP bind from `0.0.0.0` to `127.0.0.1`; a non-loopback
+  bind now requires an explicit `allowed_hosts` list and rejects `*`.
+- Validate the `Host` and browser `Origin` headers before MCP dispatch to
+  mitigate DNS rebinding; reject wildcard CORS origins for non-loopback binds.
+- Rate-limit requests per authenticated client identity, applied consistently
+  to both `/mcp` and the `/api/v1/*` REST routes (the REST routes previously
+  had no rate limit at all).
+- Reject globally shared, process-wide persistent shell sessions (
+  `execution_mode: shell`) in HTTP mode by default; require an explicit
+  `allow_shared_shell_sessions: true` opt-in for single-principal deployments.
+- Stop returning or logging the submitted command text in `execute_command`
+  results, in either `exec` or `shell` execution mode.
+- Mask unexpected MCP and REST error details from clients, while still
+  surfacing expected, safe-to-show conditions (unknown host, a path-policy
+  violation, a dropped SSH connection, a command timeout) with their real
+  message rather than a generic error — see Fixed below.
+
+### Changed
+- Move the remote MCP transport from legacy HTTP+SSE to stateless MCP
+  Streamable HTTP at `/mcp`.
+- `execute_command` now returns a typed `CommandResult` with `host`, `output`,
+  `success`, and an always-present `exit_status` (previously omitted on
+  success). The `command` field is no longer included in the response.
+- Persistent shell-mode command results now report the command's real exit
+  status, captured via a unique per-call marker, instead of always reporting
+  success.
+
+### Added
+- GitHub Actions CI running the test suite on Python 3.10-3.13 and checking
+  `black`/`isort` formatting on every pull request and push to `main`. There
+  was previously no automated status check on this repository.
+- Regression coverage for authentication modes, HTTP Host/Origin/CORS
+  handling, rate limiting, error masking, and typed command results.
+
+### Fixed
+- `mask_error_details=True` was masking every tool exception in HTTP mode,
+  including ordinary expected ones. An agent hitting a typo'd host name, a
+  path-policy violation, a dropped SSH connection, or a command timeout over
+  `/mcp` previously got only an opaque `"Error calling tool"` message with no
+  indication of why, while the equivalent REST call already returned the real
+  message. These are now re-raised as FastMCP `ToolError`s, which bypass
+  masking, so `/mcp` and REST behave consistently. Only genuinely unexpected
+  exceptions are still masked.
+- The `/api/v1/*` REST compatibility routes had no rate limit at all, so an
+  authenticated client could bypass the `/mcp` rate limit entirely by calling
+  REST instead. They now enforce the same `rate_limit_per_minute` budget,
+  via a separate limiter tracked independently from FastMCP's own `/mcp`
+  limiter (see [CONFIGURATION.md](docs/CONFIGURATION.md#rate-limiting)).
+
+### Compatibility Notes
+This release contains changes that existing clients may need to adjust for,
+even though it ships as a minor version:
+- `execute_command` responses no longer include a `command` field.
+- `execute_command.exit_status` is now always present (previously present
+  only on failure).
+- Legacy HTTP+SSE clients must move to Streamable HTTP.
+- HTTP mode binds to loopback by default; a remote bind now requires
+  `allowed_hosts` and, in most cases, explicit authentication.
+- JWT/JWKS mode requires an externally visible HTTPS `oauth.base_url` (or
+  `BASE_URL`) so RFC 9728 metadata can be generated.
+- Remote wildcard CORS (`cors_origins: ["*"]`) is rejected for non-loopback
+  binds.
+- HTTP hosts configured with `execution_mode: shell` must move to `exec`, or
+  the deployment must explicitly set `allow_shared_shell_sessions: true`.
 
 ## [2.1.0] - 2026-09-02
 
@@ -175,6 +241,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **v2.2.0** (2026-09-11): Framework-native HTTP authentication, Streamable HTTP transport, typed command results, and consistent rate limiting/error handling
 - **v2.1.0** (2026-09-02): Added bidirectional SFTP transfer tools and transfer safety policy
 - **v2.0.0** (2025-12-31): Complete rewrite with FastMCP, dual transport, OAuth support
 - **v1.0.0** (2024): Initial release with HTTP-only custom MCP implementation

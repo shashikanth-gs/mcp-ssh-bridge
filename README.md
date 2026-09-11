@@ -262,6 +262,7 @@ for the complete transfer model and policy examples.
 - **[ChatGPT Integration](docs/CHATGPT_INTEGRATION.md)** - OAuth setup for ChatGPT
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - Technical deep dive
 - **[Security Best Practices](docs/SECURITY.md)** - Securing your deployment
+- **[2.2.0 Release Notes](docs/releases/2.2.0.md)** - Framework-native HTTP authentication and transport hardening
 - **[2.1.0 Release Notes](docs/releases/2.1.0.md)** - SFTP file-transfer release details
 
 ## Docker Deployment
