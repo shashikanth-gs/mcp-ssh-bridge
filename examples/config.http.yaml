@@ -1,21 +1,22 @@
 # SSH MCP Bridge - HTTP Mode Configuration
 # This configuration is for remote deployment where the MCP server runs on a remote host
-# and AI agents connect via HTTP/SSE protocol.
+# and AI agents connect via Streamable HTTP.
 
 server:
   # HTTP server configuration
   host: "0.0.0.0"           # Listen on all interfaces
   port: 8080                # HTTP port
-  enable_http: true         # Enable HTTP/SSE transport
+  enable_http: true         # Enable Streamable HTTP transport
   enable_stdio: false       # Disable STDIO mode
-  
-  # API Key authentication (use strong random key)
-  # Generate with: openssl rand -hex 32
-  api_key: "your-secret-api-key-here-replace-with-strong-random-key"
+
+  # Set API_KEY in the environment; do not store it in this file.
+  auth_mode: api_key
+  allowed_hosts:
+    - "mcp.example.com"
   
   # CORS configuration for web clients
   cors_origins:
-    - "*"  # Allow all origins (restrict in production)
+    - "https://trusted-client.example"
   
   # Logging
   log_level: "INFO"
@@ -28,7 +29,7 @@ hosts:
     port: 22
     username: "proxy-admin"
     private_key_path: "~/.ssh/proxy_key"
-    execution_mode: "shell"
+    execution_mode: "exec"
     disable_pager: true
 
   - name: k8s-cluster
@@ -37,7 +38,7 @@ hosts:
     port: 22
     username: "k8s-admin"
     private_key_path: "~/.ssh/k8s_key"
-    execution_mode: "shell"
+    execution_mode: "exec"
     disable_pager: true
 
   - name: database-primary

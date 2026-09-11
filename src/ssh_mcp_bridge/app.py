@@ -4,18 +4,19 @@ import argparse
 import logging
 import platform
 import sys
-from importlib.metadata import PackageNotFoundError, version as package_version
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as package_version
 from pathlib import Path
 from typing import Optional
 
 import fastmcp
 import uvicorn
 
-from ssh_mcp_bridge.models.config import load_config, Config
-from ssh_mcp_bridge.core.session_manager import SshSessionManager
-from ssh_mcp_bridge.services.mcp_service import McpService
-from ssh_mcp_bridge.api.mcp_server import create_mcp_server
 from ssh_mcp_bridge.api.http_server import create_http_server
+from ssh_mcp_bridge.api.mcp_server import create_mcp_server
+from ssh_mcp_bridge.core.session_manager import SshSessionManager
+from ssh_mcp_bridge.models.config import Config, load_config
+from ssh_mcp_bridge.services.mcp_service import McpService
 from ssh_mcp_bridge.utils.logging import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -86,7 +87,9 @@ class Application:
         """Run in HTTP mode."""
         logger.info("Starting HTTP server mode")
         logger.info(f"API available at http://{self.config.server.host}:{self.config.server.port}")
-        logger.info(f"Health check: http://{self.config.server.host}:{self.config.server.port}/health")
+        logger.info(
+            f"Health check: http://{self.config.server.host}:{self.config.server.port}/health"
+        )
         logger.info(f"API docs: http://{self.config.server.host}:{self.config.server.port}/docs")
 
         uvicorn.run(

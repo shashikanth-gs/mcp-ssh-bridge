@@ -31,9 +31,9 @@ The `server` section configures transport modes and server behavior.
 
 ```yaml
 server:
-  host: "0.0.0.0"          # Listen address for HTTP mode
+  host: "127.0.0.1"        # Safe default for HTTP mode
   port: 8080                # Port for HTTP mode
-  enable_http: false        # Enable HTTP/SSE transport
+  enable_http: false        # Enable Streamable HTTP transport
   enable_stdio: true        # Enable STDIO transport
   log_level: "INFO"         # Logging level
 ```
@@ -42,42 +42,115 @@ server:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `host` | string | `"0.0.0.0"` | Address to bind HTTP server (HTTP mode only) |
+| `host` | string | `"127.0.0.1"` | Address to bind HTTP server (HTTP mode only) |
 | `port` | integer | `8080` | Port for HTTP server (HTTP mode only) |
-| `enable_http` | boolean | `false` | Enable HTTP/SSE transport |
+| `enable_http` | boolean | `false` | Enable stateless Streamable HTTP transport |
 | `enable_stdio` | boolean | `true` | Enable STDIO transport |
+| `auth_mode` | string | `"auto"` | `auto`, `none`, `api_key`, or `oidc` |
+| `allowed_hosts` | list | `[]` | Host headers accepted by FastMCP's DNS-rebinding guard |
+| `cors_origins` | list | `[]` | Browser origins allowed by CORS and the MCP origin guard |
+| `allow_unauthenticated_http` | boolean | `false` | Explicitly acknowledge an unauthenticated non-loopback bind |
+| `allow_shared_shell_sessions` | boolean | `false` | Explicitly allow process-global shell state in HTTP mode |
+| `rate_limit_per_minute` | integer | `60` | Per-authenticated-client request limit, applied separately to `/mcp` and to the `/api/v1` REST routes |
 | `log_level` | string | `"INFO"` | Logging level: DEBUG, INFO, WARN, ERROR |
 
-### API Key Authentication (HTTP Mode)
+## HTTP Security and Authentication
 
-For HTTP mode without OAuth:
+HTTP mode fails closed:
+
+- `auth_mode: api_key` without a key is rejected at startup.
+- Invalid OIDC/Auth0 configuration is rejected instead of silently exposing `/mcp`.
+- An unauthenticated bind outside loopback is rejected unless
+  `allow_unauthenticated_http: true` explicitly acknowledges the risk.
+- Non-loopback binds require `allowed_hosts`; wildcard hosts are rejected.
+- Persistent shell sessions are rejected by default because they are shared
+  application state rather than isolated by MCP client.
+
+### Rate Limiting
+
+`rate_limit_per_minute` caps requests per authenticated client identity (the
+bearer token's `client_id`, or `"anonymous"` when auth is disabled). It is
+enforced on both surfaces so the REST routes cannot be used to bypass the
+limit that applies to `/mcp`:
+
+- `/mcp` is limited by FastMCP's own `SlidingWindowRateLimitingMiddleware`.
+- The `/api/v1/*` REST routes are limited by a separate, bridge-owned sliding
+  window (`ssh_mcp_bridge.api.rate_limiter.SlidingWindowRateLimiter`) applied
+  in the same `verify_authentication` dependency that checks the bearer token.
+
+These are two independent counters with the same per-minute budget, not one
+shared counter — a client's REST and MCP calls are not deducted from a single
+combined total. A client that is rate-limited on `/mcp` can still make REST
+calls (and vice versa) up to its own separate budget.
+
+### Error Detail Visibility
+
+HTTP mode sets FastMCP's `mask_error_details=True`, so an unexpected exception
+inside a tool call is replaced with a generic `"Error calling tool '<name>'"`
+message rather than reaching the client. Without further care this would also
+hide ordinary, expected conditions — an unknown host, a path-policy
+violation, a dropped SSH connection, a shell command timeout — that carry a
+safe, actionable message and that REST clients already see as a normal 400/404
+response.
+
+To keep `/mcp` and the REST routes consistent, each MCP tool re-raises
+`ValueError`, `FileNotFoundError`, `TimeoutError`, and `SshConnectionError` as
+FastMCP's `ToolError`, which FastMCP always delivers to the client even when
+`mask_error_details=True`. Only genuinely unexpected exceptions (a bug, a
+dependency failure) are still masked. Command text and other sensitive
+argument data are never included in either case.
+
+### API Key Authentication (Compatibility/Internal Use)
+
+The existing raw API-key flow is implemented with FastMCP's
+`StaticTokenVerifier`, so both `/mcp` and the REST compatibility endpoints use
+the same `Authorization: Bearer` token. FastMCP documents static tokens as a
+development/internal mechanism because they are held in plaintext in process
+memory. Prefer JWT/JWKS or Auth0 for production.
 
 ```yaml
 server:
+  host: "0.0.0.0"
   enable_http: true
-  api_key: "your-secret-api-key-here"
+  enable_stdio: false
+  auth_mode: api_key
+  allowed_hosts:
+    - "mcp.example.com"
   cors_origins:
-    - "*"  # Or specific origins
+    - "https://trusted-client.example"
 ```
 
-**Security Note**: Use strong, randomly generated API keys. Example:
+Supply the key through the environment rather than YAML:
+
 ```bash
-# Generate secure API key
-openssl rand -hex 32
+export API_KEY="$(openssl rand -hex 32)"
 ```
 
-### OAuth/OIDC Authentication (HTTP Mode)
+### JWT/JWKS Verification
 
-For enterprise authentication with OAuth 2.0/OIDC:
+This is the default OIDC provider. Clients obtain a bearer token separately;
+FastMCP verifies its signature, issuer, audience, expiry, and configured scopes.
+The bridge wraps the verifier in FastMCP's `RemoteAuthProvider` so it also
+publishes RFC 9728 protected-resource metadata. `base_url` is therefore required
+and must be the externally visible HTTPS origin of this MCP server.
 
 ```yaml
 server:
+  host: "0.0.0.0"
   enable_http: true
+  enable_stdio: false
+  auth_mode: oidc
+  allowed_hosts:
+    - "mcp.example.com"
   oauth:
     enabled: true
+    provider: jwt
     issuer: "https://your-domain.auth0.com/"
     audience: "https://your-api-identifier"
-    jwks_uri: "https://your-domain.auth0.com/.well-known/jwks.json"  # Optional
+    jwks_uri: "https://your-domain.auth0.com/.well-known/jwks.json"
+    base_url: "https://mcp.example.com"
+    required_scopes:
+      - "mcp:execute"
 ```
 
 OAuth configuration can also be set via environment variables:
@@ -89,22 +162,31 @@ export IDP_AUDIENCE=https://your-api-identifier
 export IDP_JWKS_URI=https://your-domain.auth0.com/.well-known/jwks.json
 ```
 
+### Auth0 Interactive OAuth
+
+Set `oauth.provider: auth0` when MCP clients must perform interactive OAuth
+discovery through the bridge. Configure `AUTH0_CLIENT_ID`,
+`AUTH0_CLIENT_SECRET`, `BASE_URL`, and, in production, `JWT_SIGNING_KEY`.
+FastMCP recommends persistent encrypted client storage for multi-instance
+deployments; the default in-memory storage is suitable only for a single
+instance. Dynamic Client Registration remains available for compatibility,
+while current MCP clients prefer Client ID Metadata Documents.
+
 ### CORS Configuration
 
 ```yaml
 server:
+  allowed_hosts:
+    - "mcp.example.com"
   cors_origins:
     - "https://yourdomain.com"
     - "https://chat.openai.com"
     - "https://chatgpt.com"
-  cors_allow_credentials: true
-  cors_allow_methods:
-    - "GET"
-    - "POST"
-  cors_allow_headers:
-    - "Authorization"
-    - "Content-Type"
 ```
+
+`allowed_hosts` validates the HTTP `Host` header. `cors_origins` is also passed
+to FastMCP's origin guard; CORS alone is not a DNS-rebinding defense. Avoid `*`
+for remote deployments.
 
 ## SSH Host Configuration
 
@@ -186,6 +268,15 @@ hosts:
 - Working directory needs to persist
 - Setting environment variables
 - Complex shell operations required
+
+In HTTP mode, shell state is shared by all callers that use the same bridge
+process and host. It is therefore blocked by default. Prefer `exec`. Only a
+single-principal deployment should set:
+
+```yaml
+server:
+  allow_shared_shell_sessions: true
+```
 
 ### Authentication Methods
 
@@ -364,16 +455,12 @@ Logs are written to:
 Configuration values can be overridden using environment variables:
 
 ```bash
-# Server configuration
-export SSH_MCP_HOST=0.0.0.0
-export SSH_MCP_PORT=8080
-export SSH_MCP_LOG_LEVEL=DEBUG
-
 # OAuth configuration
 export AUTH_MODE=oidc
 export IDP_ISSUER=https://auth.example.com/
 export IDP_AUDIENCE=https://api.example.com
 export IDP_JWKS_URI=https://auth.example.com/.well-known/jwks.json
+export BASE_URL=https://mcp.example.com
 
 # API key (for non-OAuth HTTP mode)
 export SSH_MCP_API_KEY=your-secret-key
@@ -407,13 +494,20 @@ server:
   port: 8080
   enable_http: true
   enable_stdio: false
+  auth_mode: oidc
+  allowed_hosts:
+    - "mcp.example.com"
   
   # OAuth authentication
   oauth:
     enabled: true
+    provider: jwt
     issuer: "https://auth.example.com/"
     audience: "https://ssh-mcp.example.com"
     jwks_uri: "https://auth.example.com/.well-known/jwks.json"
+    base_url: "https://mcp.example.com"
+    required_scopes:
+      - "mcp:execute"
   
   # CORS configuration
   cors_origins:
@@ -430,7 +524,7 @@ hosts:
     port: 22
     username: "nginx-admin"
     private_key_path: "~/.ssh/proxy_key"
-    execution_mode: "shell"
+    execution_mode: "exec"
     disable_pager: true
 
   - name: k8s-master
@@ -439,7 +533,7 @@ hosts:
     port: 22
     username: "k8s-admin"
     private_key_path: "~/.ssh/k8s_key"
-    execution_mode: "shell"
+    execution_mode: "exec"
     disable_pager: true
 
   - name: postgres-db

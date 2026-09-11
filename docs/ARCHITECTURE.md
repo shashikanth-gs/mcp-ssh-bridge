@@ -12,7 +12,7 @@ SSH MCP Bridge uses a layered architecture with clear separation of concerns:
 │  Claude Desktop | VS Code | ChatGPT | Custom MCP Clients│
 └──────────────┬──────────────────────────┬────────────────┘
                │                          │
-               v (STDIO)                  v (HTTP/SSE)
+               v (STDIO)             v (Streamable HTTP)
 ┌─────────────────────────────────────────────────────────┐
 │                    API LAYER                            │
 │  ┌──────────────────┐    ┌──────────────────┐          │
@@ -89,7 +89,7 @@ def list_hosts() -> list[dict]:
 #### http_server.py (FastAPI HTTP)
 
 **Responsibilities**:
-- Handle HTTP/SSE transport
+- Handle stateless Streamable HTTP transport
 - Implement REST API endpoints
 - Authentication (API key or OAuth)
 - CORS management
@@ -270,9 +270,9 @@ def list_hosts() -> list[dict]:
      "jsonrpc": "2.0",
      "result": {
        "host": "web-server",
-       "command": "uptime",
        "output": "10:30:45 up 15 days...",
-       "success": true
+       "success": true,
+       "exit_status": 0
      }
    }
 ```
@@ -310,12 +310,17 @@ def list_hosts() -> list[dict]:
 7. FastAPI formats HTTP response
    {
      "host": "web-server",
-     "command": "uptime",
      "output": "10:30:45 up 15 days...",
      "success": true,
-     "user": "user@example.com"
+     "exit_status": 0
    }
 ```
+
+FastMCP derives the `execute_command` output schema from its typed result model.
+The submitted command is intentionally omitted from the result and application
+logs. FastMCP may serialize the result into both MCP `structuredContent` and a
+JSON `content` block for backward compatibility; the bridge does not suppress
+either protocol representation.
 
 ### File Transfer Flow
 

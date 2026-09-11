@@ -195,12 +195,21 @@ services:
       - IDP_ISSUER=https://auth.example.com/
       - IDP_AUDIENCE=https://ssh-mcp.example.com
       - IDP_JWKS_URI=https://auth.example.com/.well-known/jwks.json
+      - BASE_URL=https://ssh-mcp.example.com
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
 ```
+
+This example uses JWT/JWKS verification with framework-provided protected-resource
+metadata. The mounted
+`config.yaml` must also set `auth_mode: oidc`, an explicit `allowed_hosts`
+entry for the public hostname, and `execution_mode: exec` for every SSH host.
+Use `oauth.provider: auth0` when the bridge itself must proxy an interactive
+Auth0 authorization flow. In either case, terminate TLS before exposing the
+service outside a private network.
 
 ### With Reverse Proxy (Nginx)
 
