@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+/* CSS similar to index.html */
+:root {
+  --ink: #16201d; --muted: #62716c; --line: rgba(22, 32, 29, 0.12);
+  --green: #31866f; --green-dark: #1f6655;
+}
+body { font-family: Inter; background: #fafcfa; padding: 50px; }
+
+.flow-container {
+  display: grid;
+  grid-template-columns: 200px 180px 220px 100px 180px;
+  gap: 16px;
+  align-items: center;
+}
+
+.flow-node {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 16px; background: white; border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: 0 4px 16px rgba(22,32,29,.04); text-align: center;
+  z-index: 2; position: relative;
+}
+.flow-node i { font-size: 24px; margin-bottom: 12px; }
+.flow-node h4 { margin: 0 0 4px 0; font-size: 14px; font-weight: 700; color: var(--ink); }
+.flow-node p { margin: 0; font-size: 11px; color: var(--muted); }
+
+.ai i { color: #3b82f6; }
+.bridge { border-color: var(--green); box-shadow: 0 8px 24px rgba(49,134,111,.1); }
+.bridge i { color: var(--green); }
+.auth i { color: #f59e0b; }
+.server i { color: #f43f5e; }
+
+.flow-path {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.path-label {
+  font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+  background: #fafcfa; padding: 2px 8px; z-index: 2; letter-spacing: 0.05em; border-radius: 4px;
+}
+.line-h {
+  position: absolute; height: 2px; background: var(--line); width: 100%; top: 50%; left: 0; z-index: 1;
+}
+.line-h.arrow-right::after {
+  content: ''; position: absolute; right: -2px; top: -4px;
+  border-width: 5px; border-style: solid; border-color: transparent transparent transparent var(--line);
+}
+.line-v {
+  position: absolute; width: 2px; background: var(--line); height: 100%; left: 50%; top: 0; z-index: 1;
+}
+
+/* Specific layout adjustments */
+.col-clients { display: flex; flex-direction: column; gap: 40px; }
+.col-paths { display: flex; flex-direction: column; gap: 40px; height: 100%; justify-content: space-around; position: relative;}
+.col-bridge { display: flex; align-items: center; }
+.col-targets { display: flex; flex-direction: column; gap: 16px; }
+
+</style>
+</head>
+<body>
+<div class="flow-container">
+  
+  <div class="col-clients">
+    <div class="flow-node ai">
+      <i class="fa-solid fa-desktop"></i>
+      <h4>Claude / VS Code</h4>
+      <p>Local Client</p>
+    </div>
+    <div class="flow-node ai">
+      <i class="fa-solid fa-cloud"></i>
+      <h4>ChatGPT Web</h4>
+      <p>Remote Client</p>
+    </div>
+  </div>
+
+  <div class="col-paths">
+    <!-- STDIO Path -->
+    <div class="flow-path" style="height: 40px;">
+      <div class="line-h arrow-right"></div>
+      <span class="path-label">STDIO</span>
+    </div>
+    
+    <!-- HTTP Path with Auth -->
+    <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+      <div class="flow-path" style="width: 100%; height: 40px;">
+        <div class="line-h arrow-right"></div>
+        <span class="path-label">HTTP / SSE</span>
+      </div>
+      
+      <!-- Auth Node attached below the line -->
+      <div class="flow-node auth" style="padding: 8px 12px; margin-top: 12px; border-color: #f59e0b;">
+        <i class="fa-solid fa-shield-halved" style="font-size: 16px; margin-bottom: 6px;"></i>
+        <h4 style="font-size: 12px;">OAuth 2.0 IDP</h4>
+        <p style="font-size: 10px;">Auth Middleware</p>
+      </div>
+      <!-- Line connecting HTTP path to Auth -->
+      <div style="position: absolute; width: 2px; height: 12px; background: var(--line); top: 40px;"></div>
+    </div>
+  </div>
+
+  <div class="col-bridge">
+    <div class="flow-node bridge" style="height: 140px; justify-content: center;">
+      <i class="fa-solid fa-network-wired"></i>
+      <h4>SSH Bridge</h4>
+      <p>Python App<br/>Access Control & SFTP</p>
+    </div>
+  </div>
+
+  <div class="col-paths" style="height: 140px;">
+    <!-- Fork to targets -->
+    <div style="position: absolute; left: 0; top: 35px; bottom: 35px; width: 50%; border-top: 2px solid var(--line); border-bottom: 2px solid var(--line); border-left: 2px solid var(--line); z-index: 1;"></div>
+    <div style="position: absolute; left: 50%; top: 35px; width: 50%; height: 2px; background: var(--line); z-index: 1;" class="arrow-right"></div>
+    <div style="position: absolute; left: 50%; bottom: 35px; width: 50%; height: 2px; background: var(--line); z-index: 1;" class="arrow-right"></div>
+    <!-- Middle connection -->
+    <div style="position: absolute; left: 0; top: 50%; width: 50%; height: 2px; background: var(--line); z-index: 1;"></div>
+  </div>
+
+  <div class="col-targets">
+    <div class="flow-node server">
+      <i class="fa-solid fa-server"></i>
+      <h4>Server 1</h4>
+      <p>Web Host</p>
+    </div>
+    <div class="flow-node server">
+      <i class="fa-solid fa-database"></i>
+      <h4>Server 2</h4>
+      <p>Database</p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
